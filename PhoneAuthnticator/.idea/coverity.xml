@@ -1,0 +1,962 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CoverityDesktopSettings">
+    <option name="children">
+      <map>
+        <entry key="analysis.configurations">
+          <value>
+            <SettingsBean>
+              <option name="properties">
+                <map>
+                  <entry key="configuration.active" value="Default" />
+                  <entry key="configuration.schema.version" value="1" />
+                </map>
+              </option>
+              <option name="children">
+                <map>
+                  <entry key="FilterSettings">
+                    <value>
+                      <SettingsBean>
+                        <option name="properties">
+                          <map>
+                            <entry key="com.coverity.desktop.filters" value="ALL_ISSUES!:=~=:!TO_FIX!:=~=:!HIGH_IMPACT!:=~=:!LOCAL_ONLY!:=~=:!HIGH_SEVERITY!:=~=:!NEW_TODAY!:=~=:!TO_TRIAGE!:=~=:!MY_OUTSTANDING_DEFECTS!:=~=:!OUTSTANDING_DEFECTS!:=~=:!OUTSTANDING_SECURITY_RISKS!:=~=:!OUTSTANDING_TEST_VIOLATIONS" />
+                            <entry key="com.coverity.desktop.filters.version" value="2" />
+                            <entry key="filters.configuration.selected.name" value="OUTSTANDING_DEFECTS" />
+                          </map>
+                        </option>
+                        <option name="children">
+                          <map>
+                            <entry key="ALL_ISSUES">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="1" />
+                                      <entry key="filter.name" value="ALL_ISSUES" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="0" />
+                                                <entry key="predicate" value="IS_GREATER" />
+                                                <entry key="subject" value="occurrenceCount" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="HIGH_IMPACT">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="HIGH_IMPACT" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="High" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="impact" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="HIGH_SEVERITY">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="HIGH_SEVERITY" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="Major" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="severityName" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="LOCAL_ONLY">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="1" />
+                                      <entry key="filter.name" value="LOCAL_ONLY" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="False" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="presentInReference" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="MY_OUTSTANDING_DEFECTS">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="MY_OUTSTANDING_DEFECTS" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="Current User" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="ownerName" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="NEW_TODAY">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="1" />
+                                      <entry key="filter.name" value="NEW_TODAY" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="1" />
+                                                <entry key="object.1" value="DAYS" />
+                                                <entry key="predicate" value="IN_THE_LAST" />
+                                                <entry key="subject" value="firstDetected" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="OUTSTANDING_DEFECTS">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="OUTSTANDING_DEFECTS" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="QUALITY" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="issueKind" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="OUTSTANDING_SECURITY_RISKS">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="OUTSTANDING_SECURITY_RISKS" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="SECURITY" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="issueKind" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="OUTSTANDING_TEST_VIOLATIONS">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="OUTSTANDING_TEST_VIOLATIONS" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="TEST" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="issueKind" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="TO_FIX">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="2" />
+                                      <entry key="filter.name" value="TO_FIX" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="aggregation" value="ANY" />
+                                                <entry key="clausesCount" value="4" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.AggregationFilterClause" />
+                                              </map>
+                                            </option>
+                                            <option name="children">
+                                              <map>
+                                                <entry key="clause.0">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Bug" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.1">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Pending" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.2">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Unclassified" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                                <entry key="clause.3">
+                                                  <value>
+                                                    <SettingsBean>
+                                                      <option name="properties">
+                                                        <map>
+                                                          <entry key="object.0" value="Untested" />
+                                                          <entry key="predicate" value="IS" />
+                                                          <entry key="subject" value="classificationName" />
+                                                          <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                                        </map>
+                                                      </option>
+                                                    </SettingsBean>
+                                                  </value>
+                                                </entry>
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="clause.1">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="Fix Required" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="actionName" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                            <entry key="TO_TRIAGE">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="aggregation" value="ALL" />
+                                      <entry key="clausesCount" value="1" />
+                                      <entry key="filter.name" value="TO_TRIAGE" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clause.0">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="object.0" value="Unclassified" />
+                                                <entry key="predicate" value="IS" />
+                                                <entry key="subject" value="classificationName" />
+                                                <entry key="type" value="com.coverity.desktop.model.filters.Triple" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                          </map>
+                        </option>
+                      </SettingsBean>
+                    </value>
+                  </entry>
+                  <entry key="configurations">
+                    <value>
+                      <SettingsBean>
+                        <option name="children">
+                          <map>
+                            <entry key="Default">
+                              <value>
+                                <SettingsBean>
+                                  <option name="properties">
+                                    <map>
+                                      <entry key="ANALYSIS_SETTINGS_SCHEMA_VERSION" value="5" />
+                                      <entry key="CA_CERT_PATH.override" value="true" />
+                                      <entry key="CENTRAL_PROJECT_ENABLED.override" value="true" />
+                                      <entry key="CENTRAL_STREAMS.override" value="true" />
+                                      <entry key="CENTRAL_STREAMS_LANG.override" value="true" />
+                                      <entry key="CENTRAL_STREAMS_TRIAGE_STORE.override" value="true" />
+                                      <entry key="CIM_AUTHENTICATION_KEY_FILE_PATH.override" value="true" />
+                                      <entry key="CIM_AUTHENTICATION_STYLE.override" value="true" />
+                                      <entry key="CIM_ENABLED.override" value="true" />
+                                      <entry key="CIM_NAME.override" value="true" />
+                                      <entry key="CIM_SAVE_AUTHENTICATION_KEY_FILE.override" value="true" />
+                                      <entry key="CIM_USING_GLOBAL_CENTRAL_SETTINGS.override" value="true" />
+                                      <entry key="HOST_NAME.override" value="true" />
+                                      <entry key="LOCAL_SEARCH_PATHS.override" value="true" />
+                                      <entry key="PASSWORD.override" value="true" />
+                                      <entry key="PASSWORD_SAVED.override" value="true" />
+                                      <entry key="PORT_NUM.override" value="true" />
+                                      <entry key="PREF_CENTRAL_CONFIG_VERSION_NUMBER" value="1" />
+                                      <entry key="PROJECTS.override" value="true" />
+                                      <entry key="STREAMS.override" value="true" />
+                                      <entry key="STRIP_REMOTE_PATH_PREFIXES.override" value="true" />
+                                      <entry key="USER_NAME.override" value="true" />
+                                      <entry key="USE_CA_CERT.override" value="true" />
+                                      <entry key="USE_SSL.override" value="true" />
+                                      <entry key="com.coverity.desktop.model.cim.version" value="2" />
+                                    </map>
+                                  </option>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="PREF_CMD_LINE_SETTINGS">
+                                        <value>
+                                          <SettingsBean>
+                                            <option name="properties">
+                                              <map>
+                                                <entry key="CHECKERS_PREF_NAMES" value="" />
+                                                <entry key="analysis_command_line_settings_schema_version" value="3" />
+                                                <entry key="analysis_command_line_settings_schema_version.override" value="true" />
+                                              </map>
+                                            </option>
+                                          </SettingsBean>
+                                        </value>
+                                      </entry>
+                                      <entry key="PREF_SCM_CONFIGURATION">
+                                        <value>
+                                          <SettingsBean />
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                </SettingsBean>
+                              </value>
+                            </entry>
+                          </map>
+                        </option>
+                      </SettingsBean>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </SettingsBean>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
