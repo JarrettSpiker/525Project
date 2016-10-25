@@ -8,21 +8,47 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.jspiker.accesscontrolsystem.AccessControlActivity">
-
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="This is the access control system" />
-        <Button
-            android:id="@+id/reinitialize_button"
+
+        <TextView
+            android:id="@+id/statusHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reinitialize"/>
+            android:text="Status:"
+            android:textStyle="bold"
+            android:textSize="25dp"
+            android:textColor="#d90a0e"
+            android:layout_marginTop="25dp"/>
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:textSize="15dp"
+            android:textColor="#d90a0e"
+            android:textStyle="italic"
+            android:text="Not yet initialized"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="100dp"
+            android:layout_gravity="bottom">
+            <Button
+                android:id="@+id/reinitialize_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reinitialize"/>
+        </LinearLayout>
     </LinearLayout>
+
 
 
 
