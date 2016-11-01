@@ -46,11 +46,25 @@
             android:layout_gravity="end"
             android:text="Confirm"/>
         <TextView
-            android:id="@+id/numDevicesText"
+            android:id="@+id/pleaseConfirmText"
             android:layout_marginTop="10dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:text="Please confirm the number of users needed to authenticate"/>
+        <TextView
+            android:id="@+id/numDevicesText"
+            android:layout_marginTop="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text=""
+            android:visibility="invisible"/>
+        <Button
+            android:id="@+id/cancelFindingDevicesButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:visibility="invisible"
+            android:enabled="false"/>
 
     </LinearLayout>
 </RelativeLayout>
