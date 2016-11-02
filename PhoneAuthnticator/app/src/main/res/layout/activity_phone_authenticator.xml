@@ -9,29 +9,54 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.jspiker.phoneauthnticator.PhoneAuthenticatorActivity">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/auth_status_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="vertical">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="This is the phone authenticator"
-            android:layout_marginBottom="100dp"/>
-        <TextView
-            android:id="@+id/auth_status_text"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="You have not yet attempted authentication"
-            android:layout_marginBottom="10dp"
-            android:textColor="#dfd400"/>
-        <Button
-            android:id="@+id/authenticate_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Authenticate"
-            android:layout_gravity="center_horizontal"/>
-    </LinearLayout>
+        android:text="You have not yet attempted authentication"
+        android:textColor="#dfd400"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="51dp" />
+
+    <Button
+        android:id="@+id/authenticate_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Authenticate"
+        android:layout_gravity="center_horizontal"
+        android:layout_below="@+id/auth_status_text"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="52dp" />
+
+    <TextView
+        android:id="@+id/init_status_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Not yet initialized"
+        android:textColor="@android:color/holo_red_dark"
+        android:layout_marginBottom="40dp"
+        android:layout_above="@+id/init_button"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:text="none"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/init_info_text"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="61dp"
+        android:autoText="true"
+        android:visibility="invisible" />
+
+    <Button
+        android:text="INITIALIZE THIS DEVICE"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/init_button"
+        android:layout_marginBottom="38dp"
+        android:layout_above="@+id/init_info_text"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>
