@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.w3c.dom.Text;
@@ -25,6 +26,8 @@ import java.util.UUID;
 
 public class ReinitializeActivity extends AppCompatActivity {
 
+
+    private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
     private static final int REQUEST_ENABLE_BT_CODE = 7;
 
     private static final String numberOfDevicesFound = "Number of devices found: ";
@@ -52,7 +55,7 @@ public class ReinitializeActivity extends AppCompatActivity {
             BluetoothServerSocket serverSocket = null;
             try {
                 try {
-                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System", UUID.randomUUID());
+                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING));
                 } catch (IOException e) {
                     handleBluetoothFailed("Bluetooth socket creation failed: " + e.getMessage());
                     return  null;
@@ -143,6 +146,8 @@ public class ReinitializeActivity extends AppCompatActivity {
         if(!bluetoothAdapter.isEnabled()){
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
+        } else{
+            tryToFindDevices();
         }
     }
 
@@ -159,6 +164,7 @@ public class ReinitializeActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                numDevicesText.setVisibility(View.VISIBLE);
                 numDevicesText.setText("Bluetooth connection failed\n" + reason);
                 numDevicesText.setTextColor(Color.RED);
 
@@ -167,15 +173,28 @@ public class ReinitializeActivity extends AppCompatActivity {
         });
     }
 
-    private synchronized void handlePhoneConnected(BluetoothSocket socket){
-        synchronized (foundSoFarLock) {
-            //TODO handle the connection of the new phone
-            /*
-            This will somehow have to involve getting the passcode from the phone, giving the phone a token, and then saving the phone to some list so that we can send a confirmation message
-             */
-            foundSoFar++;
+    private  void handlePhoneConnected(BluetoothSocket socket){
+        ListenableFuture<Void> future = Threading.runOnBackgroundThread(new Function<Void, Void>() {
+                @Override
+                public Void apply(Void input) {
+                    //TODO handle the connection of the new phone
+                    /*
+                    This will somehow have to involve getting the passcode from the phone, giving the phone a token, and then saving the phone to some list so that we can send a confirmation message
+                     */
 
-        }
+                    synchronized (foundSoFarLock) {
+                        foundSoFar++;
+                    }
+                    return null;
+                }
+            });
+
+        ListenableFuture<Void> f2 = Futures.transform(future, new Function<Void, Void>() {
+            @Override
+            public Void apply(Void input) {
+                return null;
+            }
+        });
 
     }
 
