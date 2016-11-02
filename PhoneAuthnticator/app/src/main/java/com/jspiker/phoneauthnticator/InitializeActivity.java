@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -238,17 +239,25 @@ public class InitializeActivity extends AppCompatActivity {
             }
         });
 
-        ListenableFuture<Void> waitForconfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
+        ListenableFuture<Void> waitForConfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
                 return CommunicationApi.waitForInitializationConfirmation();
             }
         });
 
-        return Futures.transformAsync(waitForconfirmation, new AsyncFunction<Void, Void>() {
+        ListenableFuture<Void> confirm =  Futures.transformAsync(waitForConfirmation, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
                 return CommunicationApi.confirmInitialization();
+            }
+        });
+
+        return Futures.catching(confirm, Throwable.class, new Function<Throwable, Void>() {
+            @Override
+            public Void apply(Throwable input) {
+                Log.w("Init error", input.getMessage());
+                return null;
             }
         });
     }
