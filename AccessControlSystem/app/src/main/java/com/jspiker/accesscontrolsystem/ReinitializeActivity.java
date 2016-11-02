@@ -5,8 +5,9 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -14,15 +15,16 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.w3c.dom.Text;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ReinitializeActivity extends AppCompatActivity {
 
@@ -46,6 +48,8 @@ public class ReinitializeActivity extends AppCompatActivity {
 
     private final Object foundSoFarLock = new Object();
     private int foundSoFar = 0; //Dont access this unless synchronized on foundSoFarLock
+
+    private CopyOnWriteArrayList<DeviceInfo> foundDevices;
 
     private ListenableFuture<Void> findDevicesThread;
 
@@ -75,9 +79,10 @@ public class ReinitializeActivity extends AppCompatActivity {
                     if (socket != null) {
                         // Do work to manage the connection (in a separate thread)
                         handlePhoneConnected(socket);
-                        continue;
                     }
                 }
+
+                //TODO we now have a list of deviced in foundDevices; finish the connection and save the info for each
             }finally {
                 if(serverSocket != null){
                     try {
@@ -152,11 +157,10 @@ public class ReinitializeActivity extends AppCompatActivity {
     }
 
     private void tryToFindDevices() {
-        numDevicesText.setVisibility(View.VISIBLE);
-        numDevicesText.setText(numberOfDevicesFound + getFoundSoFar());
+        setNumberOfDevicesFound(0);
 
         switchToFindingDevicesMode(true);
-
+        foundDevices = new CopyOnWriteArrayList<>();
         findDevicesThread = Threading.runOnBackgroundThread(findDevicesFunction);
     }
 
@@ -173,26 +177,65 @@ public class ReinitializeActivity extends AppCompatActivity {
         });
     }
 
-    private  void handlePhoneConnected(BluetoothSocket socket){
-        ListenableFuture<Void> future = Threading.runOnBackgroundThread(new Function<Void, Void>() {
+    private  ListenableFuture<Void> handlePhoneConnected(final BluetoothSocket socket){
+        ListenableFuture<String> generateToken = Threading.runOnBackgroundThread(new Function<Void, String>() {
                 @Override
-                public Void apply(Void input) {
-                    //TODO handle the connection of the new phone
-                    /*
-                    This will somehow have to involve getting the passcode from the phone, giving the phone a token, and then saving the phone to some list so that we can send a confirmation message
-                     */
+                public String apply(Void input) {
+                    SecureRandom random = new SecureRandom();
+                    return new BigInteger(130, random).toString(32);
 
-                    synchronized (foundSoFarLock) {
-                        foundSoFar++;
-                    }
-                    return null;
                 }
             });
 
-        ListenableFuture<Void> f2 = Futures.transform(future, new Function<Void, Void>() {
+        final AtomicReference<String> token = new AtomicReference<>();
+        final AtomicReference<String> passcode = new AtomicReference<>();
+
+
+        ListenableFuture<Void> sendToken = Futures.transformAsync(generateToken, new AsyncFunction<String, Void>() {
             @Override
-            public Void apply(Void input) {
+            public ListenableFuture<Void> apply(String token) {
+                return CommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
+            }
+        });
+
+        ListenableFuture<String> getPasscode = Futures.transformAsync(sendToken, new AsyncFunction<Void, String>() {
+            @Override
+            public ListenableFuture<String> apply(Void input) throws Exception {
+                return CommunicationApi.receivePasscode();
+            }
+        });
+
+        ListenableFuture<Void> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Void>() {
+            @Override
+            public Void apply(String input) {
+                DeviceInfo info = new DeviceInfo(socket, token.get(), passcode.get());
+                foundDevices.add(info);
+                int found = 0;
+                synchronized (foundSoFarLock){
+                    foundSoFar++;
+                    found = foundSoFar;
+
+                }
+                setNumberOfDevicesFound(found);
                 return null;
+            }
+        });
+
+        return Futures.catching(updateDevicesFound, Throwable.class, new Function<Throwable, Void>() {
+            @Override
+            public Void apply(Throwable input) {
+                Log.w("Reinit error", input.getMessage());
+                return null;
+            }
+        });
+    }
+
+    private void setNumberOfDevicesFound(final int number){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                numDevicesText.setVisibility(View.VISIBLE);
+                numDevicesText.setText( numberOfDevicesFound + number);
             }
         });
 
@@ -219,5 +262,16 @@ public class ReinitializeActivity extends AppCompatActivity {
         numDevicesSpinner.setEnabled(!findingDevices);
         pleaseConfirmText.setEnabled(!findingDevices);
         pleaseConfirmText.setVisibility( findingDevices ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    private static class DeviceInfo{
+        final BluetoothSocket socket;
+        final String token;
+        final String passcode;
+        DeviceInfo(BluetoothSocket socket, String token, String passcode){
+            this.socket = socket;
+            this.token = token;
+            this.passcode = passcode;
+        }
     }
 }
