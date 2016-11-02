@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Phone Authnticator</string>
-    <string name="title_activity_initialize">InitializeActivity</string>
+    <string name="app_name">Phone Authenticator</string>
+    <string name="title_activity_initialize">Initialize</string>
 </resources>

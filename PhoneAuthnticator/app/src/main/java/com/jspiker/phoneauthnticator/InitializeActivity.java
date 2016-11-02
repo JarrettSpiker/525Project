@@ -63,6 +63,7 @@ public class InitializeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_initialize);
         statusText = (TextView) findViewById(R.id.initialize_status);
 
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
@@ -77,9 +78,9 @@ public class InitializeActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onStart() {
-
-        statusText.setText("Searching for devices...");
+    protected void onStart() {
+        super.onStart();
+        setStatusText("Searching for devices...", Color.GRAY);
 
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
@@ -97,6 +98,7 @@ public class InitializeActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         // Check which request we're responding to
         if (requestCode == REQUEST_ENABLE_BT_CODE) {
             //returning from the "enable bluetooth" activity
@@ -110,6 +112,8 @@ public class InitializeActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+
         unregisterReceiver(receiver);
     }
 

@@ -67,7 +67,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
 
     @Override
     public void onResume(){
-
+        super.onResume();
         boolean containsToken = StorageAccess.containsToken(this);
         authButton.setEnabled(containsToken);
         if(!containsToken){
