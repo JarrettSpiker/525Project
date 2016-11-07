@@ -248,7 +248,28 @@ public class InitializeActivity extends AppCompatActivity {
             }
         });
 
-        return Futures.catching(confirm, Throwable.class, new Function<Throwable, Void>() {
+
+        ListenableFuture<Boolean> waitForFinalAck = Futures.transformAsync(confirm, new AsyncFunction<Void, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Void input) throws Exception {
+                return CommunicationApi.waitForFinalAck();
+            }
+        });
+
+        ListenableFuture<Void> handleFinalAck = Futures.transform(waitForFinalAck, new Function<Boolean, Void>() {
+            @Override
+            public Void apply(Boolean input) {
+                if(input){
+                    //TODO initialization complete. Save everything, display success, and return to main activity
+                } else{
+                    //TODO initialization failed. Scrap recieved values and display error
+                }
+                return null;
+            }
+        });
+
+
+        return Futures.catching(handleFinalAck, Throwable.class, new Function<Throwable, Void>() {
             @Override
             public Void apply(Throwable input) {
                 Log.w("Init error", input.getMessage());

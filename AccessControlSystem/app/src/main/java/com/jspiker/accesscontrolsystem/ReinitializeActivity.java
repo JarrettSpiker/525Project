@@ -82,7 +82,7 @@ public class ReinitializeActivity extends AppCompatActivity {
                     }
                 }
 
-                //TODO we now have a list of deviced in foundDevices; finish the connection and save the info for each
+                completeRegistration();
             }finally {
                 if(serverSocket != null){
                     try {
@@ -94,6 +94,33 @@ public class ReinitializeActivity extends AppCompatActivity {
             return null;
         }
     };
+
+
+    private void completeRegistration(){
+        //TODO send confirmation to each phone
+        //TODO wait for response from each phone
+
+        //TODO if all responses are accounted for and positive, then send positive ACK to all phones
+        //TODO if a response is absent, send a negative ACK to all phones
+    }
+
+    private ListenableFuture<Void> initializeConfirmationToPhone(DeviceInfo phone){
+        //TODO send confirmation to phone
+
+        return Futures.immediateFuture(null);
+    }
+
+    private ListenableFuture<Boolean> receiveConfirmationFromFound(DeviceInfo phone){
+        //TODO wait for confirmation from the phone
+
+        return Futures.immediateFuture(false);
+    }
+
+    private ListenableFuture<Void> sendFinalAckToPhone(DeviceInfo phone){
+        //TODO send final ack to the phone
+
+        return Futures.immediateFuture(null);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,6 +169,7 @@ public class ReinitializeActivity extends AppCompatActivity {
     }
 
     private void startBluetooth(){
+
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(bluetoothAdapter == null){
             //bluetooth is not supported on the device

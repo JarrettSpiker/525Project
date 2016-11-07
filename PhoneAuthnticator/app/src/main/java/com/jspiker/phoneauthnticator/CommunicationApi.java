@@ -51,6 +51,11 @@ public class CommunicationApi {
         return Futures.immediateFuture(null);
     }
 
+    public static ListenableFuture<Boolean> waitForFinalAck(){
+        //TODO this is a stub; the Boolean is whether the Ack is positive or negative
+        return Futures.immediateFuture(false);
+    }
+
     public static class TokenAndPasscodeResponse{
         public final String token;
         public final boolean isPasscodeRequired;
