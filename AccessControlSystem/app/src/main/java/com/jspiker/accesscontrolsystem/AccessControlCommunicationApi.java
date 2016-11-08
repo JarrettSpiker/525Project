@@ -14,7 +14,7 @@ import java.io.OutputStream;
  * Created by jspiker on 11/1/16.
  */
 
-public class CommunicationApi {
+public class AccessControlCommunicationApi {
 
     public static ListenableFuture<Void> sendTokenAndPasscode(final BluetoothSocket socket, final String token, boolean passcode){
         return Threading.runOnBackgroundThread(new Function<Void, Void>() {

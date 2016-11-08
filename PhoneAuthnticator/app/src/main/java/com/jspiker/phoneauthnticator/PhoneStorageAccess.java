@@ -7,7 +7,7 @@ import android.content.SharedPreferences;
  * Created by jspiker on 11/1/16.
  */
 
-public class StorageAccess {
+public class PhoneStorageAccess {
 
     private static final String tokenPref = "TOKEN_PREF";
 

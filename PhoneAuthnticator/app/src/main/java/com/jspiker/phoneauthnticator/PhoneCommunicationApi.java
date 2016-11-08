@@ -13,7 +13,7 @@ import java.io.InputStream;
  * Created by jspiker on 11/1/16.
  */
 
-public class CommunicationApi {
+public class PhoneCommunicationApi {
 
     public static ListenableFuture<TokenAndPasscodeResponse> getTokenAndPasscode(final BluetoothSocket socket){
         return Threading.runOnBackgroundThread(new Function<Void, TokenAndPasscodeResponse>() {

@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ReinitializeActivity extends AppCompatActivity {
+public class AccessControlInitializeActivity extends AppCompatActivity {
 
 
     private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
@@ -222,14 +222,14 @@ public class ReinitializeActivity extends AppCompatActivity {
         ListenableFuture<Void> sendToken = Futures.transformAsync(generateToken, new AsyncFunction<String, Void>() {
             @Override
             public ListenableFuture<Void> apply(String token) {
-                return CommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
+                return AccessControlCommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
             }
         });
 
         ListenableFuture<String> getPasscode = Futures.transformAsync(sendToken, new AsyncFunction<Void, String>() {
             @Override
             public ListenableFuture<String> apply(Void input) throws Exception {
-                return CommunicationApi.receivePasscode();
+                return AccessControlCommunicationApi.receivePasscode();
             }
         });
 
