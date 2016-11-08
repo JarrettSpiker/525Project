@@ -256,23 +256,27 @@ public class InitializeActivity extends AppCompatActivity {
             }
         });
 
-        ListenableFuture<Void> handleFinalAck = Futures.transform(waitForFinalAck, new Function<Boolean, Void>() {
+        Futures.catching(waitForFinalAck, Throwable.class, new Function<Throwable, Boolean>() {
             @Override
-            public Void apply(Boolean input) {
-                if(input){
-                    //TODO initialization complete. Save everything, display success, and return to main activity
-                } else{
-                    //TODO initialization failed. Scrap recieved values and display error
-                }
+            public Boolean apply(Throwable input) {
+                setStatusText("Connection failed :\n" + input.getMessage(), Color.RED);
                 return null;
             }
         });
 
-
-        return Futures.catching(handleFinalAck, Throwable.class, new Function<Throwable, Void>() {
+        return Futures.transform(waitForFinalAck, new Function<Boolean, Void>() {
             @Override
-            public Void apply(Throwable input) {
-                Log.w("Init error", input.getMessage());
+            public Void apply(Boolean input) {
+                if(input == null){
+                    //hit an exception which was already handled
+                    return null;
+                }
+
+                if(input){
+                    setStatusText("Authentication was successful!", Color.GREEN);
+                } else{
+                    setStatusText("Establishment of all entities failed. Authentication failed", Color.RED);
+                }
                 return null;
             }
         });
