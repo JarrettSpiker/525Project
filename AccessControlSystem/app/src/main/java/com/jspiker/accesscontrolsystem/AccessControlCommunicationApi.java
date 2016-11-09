@@ -42,4 +42,14 @@ public class AccessControlCommunicationApi {
         return Futures.immediateFuture(null);
     }
 
+    public static ListenableFuture<Boolean> receiveConfirmationResponse(final BluetoothSocket socket){
+        //TODO this is a stub
+        return Futures.immediateFuture(true);
+    }
+
+    public static ListenableFuture<Void> sendConfirmation(final BluetoothSocket socket){
+        //TODO this is a stub
+        return Futures.immediateFuture(null);
+    }
+
 }

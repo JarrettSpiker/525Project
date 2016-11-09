@@ -18,7 +18,7 @@ public class Threading {
 
 
 
-    public static <O> ListenableFuture<O> runOnBackgroundThread(final Function<Void,O> function){
+    public static <O> ListenableFuture<O> runOnBackgroundThread(final Function<Void, O> function){
         return service.submit(new Callable<O>() {
             @Override
             public O call() throws Exception {
