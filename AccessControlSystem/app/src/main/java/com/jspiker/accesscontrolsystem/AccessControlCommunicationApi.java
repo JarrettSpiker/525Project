@@ -3,8 +3,11 @@ package com.jspiker.accesscontrolsystem;
 import android.bluetooth.BluetoothSocket;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,40 +19,82 @@ import java.io.OutputStream;
 
 public class AccessControlCommunicationApi {
 
-    public static ListenableFuture<Void> sendTokenAndPasscode(final BluetoothSocket socket, final String token, boolean passcode){
-        return Threading.runOnBackgroundThread(new Function<Void, Void>() {
+    private static final String passCodeRequiredKey = "passcodeRequired";
+    private static final String passcodeKey = "passcode";
+    private static final String tokenKey = "token";
+    private static final String serverConfirmationKey = "serverConfirmation";
+    private static final String clientConfirmationKey = "clientConfirmation";
+    private static final String finalAckKey = "finalAck";
+
+    public static ListenableFuture<Void> sendTokenAndPasscode(final BluetoothSocket socket, final String token, final boolean passcodeRequired){
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(passCodeRequiredKey, passcodeRequired);
+                        jsonObject.put(tokenKey, token);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
+    }
+
+
+    public static ListenableFuture<String> receivePasscode(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, String>() {
             @Override
-            public Void apply(Void input) {
-
-                String res = null;
-                try {
-                    OutputStream stream = socket.getOutputStream();
-                    stream.write(token.getBytes()); //TODO this is just a stub
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                return null;
+            public ListenableFuture<String> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                String passcode = json.getString(passcodeKey);
+                return Futures.immediateFuture(passcode);
             }
         });
-
-
-    }
-
-
-    public static ListenableFuture<String> receivePasscode(){
-        //TODO this is a stub
-        return Futures.immediateFuture(null);
-    }
-
-    public static ListenableFuture<Boolean> receiveConfirmationResponse(final BluetoothSocket socket){
-        //TODO this is a stub
-        return Futures.immediateFuture(true);
     }
 
     public static ListenableFuture<Void> sendConfirmation(final BluetoothSocket socket){
-        //TODO this is a stub
-        return Futures.immediateFuture(null);
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(serverConfirmationKey, true);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
     }
 
+    public static ListenableFuture<Boolean> receiveConfirmationResponse(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                Boolean confirmation = json.optBoolean(clientConfirmationKey, false);
+                return Futures.immediateFuture(confirmation);
+            }
+        });
+    }
+
+    public static ListenableFuture<Void> sendFinalAck(final BluetoothSocket socket, final boolean positive){
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(finalAckKey, positive);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
+    }
 }

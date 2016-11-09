@@ -173,7 +173,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     }
 
     private ListenableFuture<Void> handleConnectedSocketAsync(BluetoothSocket socket) {
-        final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscode(socket);
+        final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
 
         final AtomicBoolean passcodeRequired = new AtomicBoolean(false);
 

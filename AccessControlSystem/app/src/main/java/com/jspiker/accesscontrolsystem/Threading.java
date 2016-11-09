@@ -28,4 +28,12 @@ public class Threading {
     }
 
 
+    public static ListenableFuture<Void> switchToBackground(){
+        return Threading.runOnBackgroundThread(new Function<Void, Void>() {
+            @Override
+            public Void apply(Void input) {
+                return null;
+            }
+        });
+    }
 }

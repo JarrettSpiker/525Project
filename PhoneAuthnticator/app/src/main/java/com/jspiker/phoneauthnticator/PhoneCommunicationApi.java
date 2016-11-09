@@ -3,11 +3,16 @@ package com.jspiker.phoneauthnticator;
 import android.bluetooth.BluetoothSocket;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Created by jspiker on 11/1/16.
@@ -15,45 +20,87 @@ import java.io.InputStream;
 
 public class PhoneCommunicationApi {
 
-    public static ListenableFuture<TokenAndPasscodeResponse> getTokenAndPasscode(final BluetoothSocket socket){
-        return Threading.runOnBackgroundThread(new Function<Void, TokenAndPasscodeResponse>() {
+    private static final String passCodeRequiredKey = "passcodeRequired";
+    private static final String passcodeKey = "passcode";
+    private static final String tokenKey = "token";
+    private static final String serverConfirmationKey = "serverConfirmation";
+    private static final String clientConfirmationKey = "clientConfirmation";
+    private static final String finalAckKey = "finalAck";
+
+
+    public static ListenableFuture<TokenAndPasscodeResponse> getTokenAndPasscodeRequired(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, TokenAndPasscodeResponse>() {
             @Override
-            public TokenAndPasscodeResponse apply(Void input) {
-
-                String res = null;
-                try {
-                    InputStream stream = socket.getInputStream();
-                    res = String.valueOf(stream.read()); //TODO this is just a stub
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                return new TokenAndPasscodeResponse(res, true);//TODO this is just a stub!
+            public ListenableFuture<TokenAndPasscodeResponse> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                TokenAndPasscodeResponse response = new TokenAndPasscodeResponse(json.getString(tokenKey), json.getBoolean(passCodeRequiredKey));
+                return Futures.immediateFuture(response);
             }
         });
 
-
     }
 
 
-    public static ListenableFuture<Void> sendPasscode(String passcode){
-        //TODO this is a stub
-        return Futures.immediateFuture(null);
+    public static ListenableFuture<Void> sendPasscode(final BluetoothSocket socket, final String passcode) throws JSONException{
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(passcodeKey, passcode);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
     }
 
-    public static ListenableFuture<Void> waitForInitializationConfirmation(){
-        //TODO this is a stub
-        return Futures.immediateFuture(null);
+    public static ListenableFuture<Void> waitForInitializationConfirmation(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Void>() {
+            @Override
+            public ListenableFuture<Void> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                boolean confirm = json.getBoolean(serverConfirmationKey);
+                if(!confirm){
+                    throw new RuntimeException("Confirmation rejected");
+                }
+                return Futures.immediateFuture(null);
+            }
+        });
     }
 
-    public static ListenableFuture<Void> confirmInitialization(){
-        //TODO this is a stub
-        return Futures.immediateFuture(null);
+    public static ListenableFuture<Void> confirmInitialization(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(clientConfirmationKey, true);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
     }
 
-    public static ListenableFuture<Boolean> waitForFinalAck(){
-        //TODO this is a stub; the Boolean is whether the Ack is positive or negative
-        return Futures.immediateFuture(false);
+    public static ListenableFuture<Boolean> waitForFinalAck(final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                boolean ack = json.getBoolean(finalAckKey);
+                return Futures.immediateFuture(ack);
+            }
+        });
     }
 
     public static class TokenAndPasscodeResponse{

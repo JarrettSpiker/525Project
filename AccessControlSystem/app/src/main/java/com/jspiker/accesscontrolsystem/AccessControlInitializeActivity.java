@@ -37,6 +37,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
     private static final int REQUEST_ENABLE_BT_CODE = 7;
+    private static final int REQUEST_ENABLE_DISC = 8;
 
     private static final String numberOfDevicesFound = "Number of devices found: ";
 
@@ -187,6 +188,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
         }
 
+        sendFinalAcks(true);
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -198,7 +201,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     private  ListenableFuture<Void> deviceRejectedConnection(){
-
+        sendFinalAcks(false);
 
         runOnUiThread(new Runnable() {
             @Override
@@ -211,6 +214,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         return Futures.immediateFuture(null);
     }
 
+    private void sendFinalAcks(boolean positive){
+        for(DeviceInfo deviceInfo : foundDevices){
+            AccessControlCommunicationApi.sendFinalAck(deviceInfo.socket, positive);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -251,10 +259,13 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         if (requestCode == REQUEST_ENABLE_BT_CODE) {
             //returning from the "enable bluetooth" activity
             if(resultCode ==  RESULT_OK){
-                tryToFindDevices();
+                makeDiscoverable();
             } else{
                 handleBluetoothFailed("Could not enable bluetooth");
             }
+        }
+        if(requestCode == REQUEST_ENABLE_DISC){
+            tryToFindDevices();
         }
     }
 
@@ -270,8 +281,15 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
         } else{
-            tryToFindDevices();
+            makeDiscoverable();
         }
+    }
+
+    private void makeDiscoverable(){
+        Intent discoverableIntent = new
+        Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+        startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISC);
     }
 
     private void tryToFindDevices() {
@@ -296,15 +314,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     private  ListenableFuture<Void> handlePhoneConnected(final BluetoothSocket socket){
-
-        ListenableFuture<Void> switchToBackground = Threading.runOnBackgroundThread(new Function<Void, Void>() {
-            @Override
-            public Void apply(Void input) {
-                return null;
-            }
-        });
-
-        final ListenableFuture<Void> connectSocket = Futures.transformAsync(switchToBackground, new AsyncFunction<Void, Void>() {
+        final ListenableFuture<Void> connectSocket = Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
                 socket.connect();
@@ -335,7 +345,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         ListenableFuture<String> getPasscode = Futures.transformAsync(sendToken, new AsyncFunction<Void, String>() {
             @Override
             public ListenableFuture<String> apply(Void input) throws Exception {
-                return AccessControlCommunicationApi.receivePasscode();
+                return AccessControlCommunicationApi.receivePasscode(socket);
             }
         });
 
