@@ -20,7 +20,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".InitializeActivity"
+            android:name=".PhoneInitializeActivity"
             android:label="@string/title_activity_initialize"
             android:theme="@style/AppTheme"></activity>
         <meta-data

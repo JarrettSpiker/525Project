@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -31,7 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class InitializeActivity extends AppCompatActivity {
+public class PhoneInitializeActivity extends AppCompatActivity {
 
     private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
 
@@ -174,14 +173,14 @@ public class InitializeActivity extends AppCompatActivity {
     }
 
     private ListenableFuture<Void> handleConnectedSocketAsync(BluetoothSocket socket) {
-        final ListenableFuture<CommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = CommunicationApi.getTokenAndPasscode(socket);
+        final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
 
         final AtomicBoolean passcodeRequired = new AtomicBoolean(false);
 
-        ListenableFuture<Void> saveToken = Futures.transform(getTokenAndPasscode, new Function<CommunicationApi.TokenAndPasscodeResponse, Void>() {
+        ListenableFuture<Void> saveToken = Futures.transform(getTokenAndPasscode, new Function<PhoneCommunicationApi.TokenAndPasscodeResponse, Void>() {
             @Override
-            public Void apply(CommunicationApi.TokenAndPasscodeResponse response) {
-                StorageAccess.setToken(InitializeActivity.this, response.token);
+            public Void apply(PhoneCommunicationApi.TokenAndPasscodeResponse response) {
+                PhoneStorageAccess.setToken(PhoneInitializeActivity.this, response.token);
                 passcodeRequired.set(response.isPasscodeRequired);
                 return null;
             }
@@ -196,11 +195,11 @@ public class InitializeActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(InitializeActivity.this);
+                            AlertDialog.Builder builder = new AlertDialog.Builder(PhoneInitializeActivity.this);
                             builder.setTitle("Enter passcode");
 
                             // Set up the input
-                            final EditText passcodeBox = new EditText(InitializeActivity.this);
+                            final EditText passcodeBox = new EditText(PhoneInitializeActivity.this);
                             // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
                             passcodeBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
                             builder.setView(passcodeBox);
@@ -230,21 +229,21 @@ public class InitializeActivity extends AppCompatActivity {
         ListenableFuture<Void> sendPasscode = Futures.transformAsync(getPasscode, new AsyncFunction<String,Void>() {
             @Override
             public ListenableFuture apply(String passcode) throws Exception {
-                return CommunicationApi.sendPasscode(passcode);
+                return PhoneCommunicationApi.sendPasscode(passcode);
             }
         });
 
         ListenableFuture<Void> waitForConfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return CommunicationApi.waitForInitializationConfirmation();
+                return PhoneCommunicationApi.waitForInitializationConfirmation();
             }
         });
 
         ListenableFuture<Void> confirm =  Futures.transformAsync(waitForConfirmation, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return CommunicationApi.confirmInitialization();
+                return PhoneCommunicationApi.confirmInitialization();
             }
         });
 
@@ -252,7 +251,7 @@ public class InitializeActivity extends AppCompatActivity {
         ListenableFuture<Boolean> waitForFinalAck = Futures.transformAsync(confirm, new AsyncFunction<Void, Boolean>() {
             @Override
             public ListenableFuture<Boolean> apply(Void input) throws Exception {
-                return CommunicationApi.waitForFinalAck();
+                return PhoneCommunicationApi.waitForFinalAck();
             }
         });
 

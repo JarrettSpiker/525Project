@@ -18,7 +18,7 @@ public class Threading {
 
 
 
-    public static <O> ListenableFuture<O> runOnBackgroundThread(final Function<Void,O> function){
+    public static <O> ListenableFuture<O> runOnBackgroundThread(final Function<Void, O> function){
         return service.submit(new Callable<O>() {
             @Override
             public O call() throws Exception {
@@ -28,4 +28,12 @@ public class Threading {
     }
 
 
+    public static ListenableFuture<Void> switchToBackground(){
+        return Threading.runOnBackgroundThread(new Function<Void, Void>() {
+            @Override
+            public Void apply(Void input) {
+                return null;
+            }
+        });
+    }
 }

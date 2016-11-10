@@ -39,7 +39,7 @@ public class AccessControlActivity extends AppCompatActivity {
 
 
     private void reinitialize(){
-        Intent intent = new Intent(this, ReinitializeActivity.class);
+        Intent intent = new Intent(this, AccessControlInitializeActivity.class);
         startActivity(intent);
     }
 

@@ -73,7 +73,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
-        boolean containsToken = StorageAccess.containsToken(this);
+        boolean containsToken = PhoneStorageAccess.containsToken(this);
         authButton.setEnabled(containsToken);
         if(!containsToken){
             statusText.setText("You have not initialized the system. Please press Reset");
@@ -82,7 +82,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
     }
 
     private void reinitialize(){
-        Intent intent = new Intent(this, InitializeActivity.class);
+        Intent intent = new Intent(this, PhoneInitializeActivity.class);
         startActivity(intent);
     }
 

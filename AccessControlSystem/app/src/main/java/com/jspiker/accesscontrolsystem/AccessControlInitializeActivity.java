@@ -15,6 +15,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.common.base.Function;
+import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,15 +23,21 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ReinitializeActivity extends AppCompatActivity {
+import static com.google.common.util.concurrent.Futures.allAsList;
+
+public class AccessControlInitializeActivity extends AppCompatActivity {
 
 
     private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
     private static final int REQUEST_ENABLE_BT_CODE = 7;
+    private static final int REQUEST_ENABLE_DISC = 8;
 
     private static final String numberOfDevicesFound = "Number of devices found: ";
 
@@ -67,7 +74,7 @@ public class ReinitializeActivity extends AppCompatActivity {
 
                 BluetoothSocket socket = null;
                 int connectedSoFar = 0;
-
+                ArrayList<ListenableFuture<Void>> connections = new ArrayList<>();
                 //keep looking until we find enough devices
                 while (connectedSoFar < numDevices) {
                     try {
@@ -78,10 +85,17 @@ public class ReinitializeActivity extends AppCompatActivity {
 
                     if (socket != null) {
                         // Do work to manage the connection (in a separate thread)
-                        handlePhoneConnected(socket);
+                        connections.add(handlePhoneConnected(socket));
                     }
                 }
 
+                Futures.whenAllSucceed(connections).call(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        completeRegistration();
+                        return null;
+                    }
+                });
                 completeRegistration();
             }finally {
                 if(serverSocket != null){
@@ -96,30 +110,114 @@ public class ReinitializeActivity extends AppCompatActivity {
     };
 
 
-    private void completeRegistration(){
-        //TODO send confirmation to each phone
-        //TODO wait for response from each phone
+    private ListenableFuture<Void> completeRegistration(){
 
-        //TODO if all responses are accounted for and positive, then send positive ACK to all phones
-        //TODO if a response is absent, send a negative ACK to all phones
+        //start listenting for responses on all phones
+        AsyncFunction<DeviceInfo, Boolean> waitForConfirmationResponse = new AsyncFunction<DeviceInfo, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(DeviceInfo deviceInfo) throws Exception {
+                return AccessControlCommunicationApi.receiveConfirmationResponse(deviceInfo.socket);
+            }
+        };
+
+        ArrayList<ListenableFuture<Boolean>> waitForConfirmationList = new ArrayList<>();
+        for(final DeviceInfo device : foundDevices){
+            ListenableFuture<Boolean> waitForDevice =
+                    Futures.transformAsync(Threading.runOnBackgroundThread(new Function<Void, DeviceInfo>() {
+                        @Override
+                        public DeviceInfo apply(Void input) {
+                            return device;//This just switches to the background thread
+                        }
+                    }),
+                    waitForConfirmationResponse);
+
+            waitForConfirmationList.add(waitForDevice);
+        }
+
+        //send confirmation to every device
+        for(final DeviceInfo device : foundDevices){
+            Threading.runOnBackgroundThread(new Function<Void, Void>() {
+                @Override
+                public Void apply(Void input) {
+                    AccessControlCommunicationApi.sendConfirmation(device.socket);
+                    return null;
+                }
+            });
+        }
+
+
+        //wait until a response is received from all devices
+        ListenableFuture<List<Boolean>> responsesReceived = Futures.allAsList(waitForConfirmationList);
+
+        ListenableFuture<Boolean> combineResponses = Futures.transform(responsesReceived, new Function<List<Boolean>, Boolean>() {
+            @Override
+            public Boolean apply(List<Boolean> input) {
+                for(Boolean b : input){
+                    if(!b){
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+
+        ListenableFuture<Boolean> withFallback = Futures.catching(combineResponses, Throwable.class, new Function<Throwable, Boolean>() {
+            @Override
+            public Boolean apply(Throwable input) {
+                return false;
+            }
+        });
+
+        return Futures.transformAsync(withFallback, new AsyncFunction<Boolean, Void>() {
+            @Override
+            public ListenableFuture<Void> apply(Boolean success) throws Exception {
+                if(success){
+                    return allDevicesConfirmed();
+                } else{
+                    return deviceRejectedConnection();
+                }
+            }
+        });
     }
 
-    private ListenableFuture<Void> initializeConfirmationToPhone(DeviceInfo phone){
-        //TODO send confirmation to phone
+    private ListenableFuture<Void> allDevicesConfirmed(){
 
+        for(DeviceInfo deviceInfo : foundDevices){
+            AccessControlStorage.setPasscodeForDevice(this, deviceInfo.macAddress, deviceInfo.passcode);
+            AccessControlStorage.setTokenForDevice(this, deviceInfo.macAddress, deviceInfo.passcode);
+
+        }
+
+        sendFinalAcks(true);
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                numDevicesText.setText("Setup complete!");
+                numDevicesText.setTextColor(Color.GREEN);
+            }
+        });
         return Futures.immediateFuture(null);
     }
 
-    private ListenableFuture<Boolean> receiveConfirmationFromFound(DeviceInfo phone){
-        //TODO wait for confirmation from the phone
+    private  ListenableFuture<Void> deviceRejectedConnection(){
+        sendFinalAcks(false);
 
-        return Futures.immediateFuture(false);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                switchToFindingDevicesMode(false);
+                numDevicesText.setText("Devices rejected final confirmation");
+                numDevicesText.setTextColor(Color.RED);
+            }
+        });
+        return Futures.immediateFuture(null);
     }
 
-    private ListenableFuture<Void> sendFinalAckToPhone(DeviceInfo phone){
-        //TODO send final ack to the phone
-
-        return Futures.immediateFuture(null);
+    private void sendFinalAcks(boolean positive){
+        for(DeviceInfo deviceInfo : foundDevices){
+            AccessControlCommunicationApi.sendFinalAck(deviceInfo.socket, positive);
+        }
     }
 
     @Override
@@ -161,10 +259,13 @@ public class ReinitializeActivity extends AppCompatActivity {
         if (requestCode == REQUEST_ENABLE_BT_CODE) {
             //returning from the "enable bluetooth" activity
             if(resultCode ==  RESULT_OK){
-                tryToFindDevices();
+                makeDiscoverable();
             } else{
                 handleBluetoothFailed("Could not enable bluetooth");
             }
+        }
+        if(requestCode == REQUEST_ENABLE_DISC){
+            tryToFindDevices();
         }
     }
 
@@ -180,8 +281,15 @@ public class ReinitializeActivity extends AppCompatActivity {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
         } else{
-            tryToFindDevices();
+            makeDiscoverable();
         }
+    }
+
+    private void makeDiscoverable(){
+        Intent discoverableIntent = new
+        Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+        startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISC);
     }
 
     private void tryToFindDevices() {
@@ -206,7 +314,15 @@ public class ReinitializeActivity extends AppCompatActivity {
     }
 
     private  ListenableFuture<Void> handlePhoneConnected(final BluetoothSocket socket){
-        ListenableFuture<String> generateToken = Threading.runOnBackgroundThread(new Function<Void, String>() {
+        final ListenableFuture<Void> connectSocket = Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Void>() {
+            @Override
+            public ListenableFuture<Void> apply(Void input) throws Exception {
+                socket.connect();
+                return null;
+            }
+        });
+
+        ListenableFuture<String> generateToken =Futures.transform(connectSocket, new Function<Void, String>() {
                 @Override
                 public String apply(Void input) {
                     SecureRandom random = new SecureRandom();
@@ -222,21 +338,21 @@ public class ReinitializeActivity extends AppCompatActivity {
         ListenableFuture<Void> sendToken = Futures.transformAsync(generateToken, new AsyncFunction<String, Void>() {
             @Override
             public ListenableFuture<Void> apply(String token) {
-                return CommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
+                return AccessControlCommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
             }
         });
 
         ListenableFuture<String> getPasscode = Futures.transformAsync(sendToken, new AsyncFunction<Void, String>() {
             @Override
             public ListenableFuture<String> apply(Void input) throws Exception {
-                return CommunicationApi.receivePasscode();
+                return AccessControlCommunicationApi.receivePasscode(socket);
             }
         });
 
         ListenableFuture<Void> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Void>() {
             @Override
             public Void apply(String input) {
-                DeviceInfo info = new DeviceInfo(socket, token.get(), passcode.get());
+                DeviceInfo info = new DeviceInfo(socket, socket.getRemoteDevice().getAddress(), token.get(), passcode.get());
                 foundDevices.add(info);
                 int found = 0;
                 synchronized (foundSoFarLock){
@@ -269,18 +385,6 @@ public class ReinitializeActivity extends AppCompatActivity {
 
     }
 
-    private int getFoundSoFar(){
-        synchronized (foundSoFarLock){
-            return foundSoFar;
-        }
-    }
-
-    private void setFoundSoFar(int newValue){
-        synchronized (foundSoFarLock){
-            foundSoFar = newValue;
-        }
-    }
-
     private void switchToFindingDevicesMode(boolean findingDevices){
         cancelButton.setVisibility(findingDevices ? View.VISIBLE : View.INVISIBLE);
         cancelButton.setEnabled(findingDevices);
@@ -296,10 +400,12 @@ public class ReinitializeActivity extends AppCompatActivity {
         final BluetoothSocket socket;
         final String token;
         final String passcode;
-        DeviceInfo(BluetoothSocket socket, String token, String passcode){
+        final String macAddress;
+        DeviceInfo(BluetoothSocket socket, String macAddress, String token, String passcode){
             this.socket = socket;
             this.token = token;
             this.passcode = passcode;
+            this.macAddress = macAddress;
         }
     }
 }
