@@ -10,6 +10,8 @@ import android.widget.Button;
 
 public class AccessControlActivity extends AppCompatActivity {
 
+    private CryptoUtilities cryptoUtilities = new CryptoUtilities();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +41,25 @@ public class AccessControlActivity extends AppCompatActivity {
     private void reinitialize(){
         Intent intent = new Intent(this, ReinitializeActivity.class);
         startActivity(intent);
+    }
+
+    private byte[] getSalt(){
+        return cryptoUtilities.generateSalt();
+    }
+
+    private boolean authenticateDevice(String deviceToken){
+        byte [] salt;
+        byte [] receivedTokenHash;
+        salt = getSalt();
+        boolean authenticated;
+
+        // Step 1: Send salt to device
+
+        // Step 2: Wait for the receivedHashedToken
+
+        authenticated = cryptoUtilities.verifyTokenHash(deviceToken, salt, receivedTokenHash);
+
+        return authenticated;
     }
 
 }
