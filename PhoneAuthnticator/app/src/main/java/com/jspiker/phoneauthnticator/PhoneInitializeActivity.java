@@ -172,7 +172,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     }
 
-    private ListenableFuture<Void> handleConnectedSocketAsync(BluetoothSocket socket) {
+    private ListenableFuture<Void> handleConnectedSocketAsync(final BluetoothSocket socket) {
         final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
 
         final AtomicBoolean passcodeRequired = new AtomicBoolean(false);
@@ -229,21 +229,21 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         ListenableFuture<Void> sendPasscode = Futures.transformAsync(getPasscode, new AsyncFunction<String,Void>() {
             @Override
             public ListenableFuture apply(String passcode) throws Exception {
-                return PhoneCommunicationApi.sendPasscode(passcode);
+                return PhoneCommunicationApi.sendPasscode(socket,passcode);
             }
         });
 
         ListenableFuture<Void> waitForConfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.waitForInitializationConfirmation();
+                return PhoneCommunicationApi.waitForInitializationConfirmation(socket);
             }
         });
 
         ListenableFuture<Void> confirm =  Futures.transformAsync(waitForConfirmation, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.confirmInitialization();
+                return PhoneCommunicationApi.confirmInitialization(socket);
             }
         });
 
@@ -251,7 +251,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         ListenableFuture<Boolean> waitForFinalAck = Futures.transformAsync(confirm, new AsyncFunction<Void, Boolean>() {
             @Override
             public ListenableFuture<Boolean> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.waitForFinalAck();
+                return PhoneCommunicationApi.waitForFinalAck(socket);
             }
         });
 
@@ -272,6 +272,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                 }
 
                 if(input){
+                    PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getRemoteDevice().getAddress());
                     setStatusText("Authentication was successful!", Color.GREEN);
                 } else{
                     setStatusText("Establishment of all entities failed. Authentication failed", Color.RED);
