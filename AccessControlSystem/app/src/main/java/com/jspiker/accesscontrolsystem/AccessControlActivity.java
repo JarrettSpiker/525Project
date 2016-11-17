@@ -11,6 +11,8 @@ import android.widget.Button;
 public class AccessControlActivity extends AppCompatActivity {
 
     private CryptoUtilities cryptoUtilities = new CryptoUtilities();
+    private AccessControlCommunicationApi communicationApi = new AccessControlCommunicationApi();
+    private AccessControlInitializeActivity initializeActivity = new AccessControlInitializeActivity();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +56,7 @@ public class AccessControlActivity extends AppCompatActivity {
         boolean authenticated;
 
         // Step 1: Send salt to device
+
 
         // Step 2: Wait for the receivedHashedToken
 

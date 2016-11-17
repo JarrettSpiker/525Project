@@ -25,6 +25,8 @@ public class AccessControlCommunicationApi {
     private static final String serverConfirmationKey = "serverConfirmation";
     private static final String clientConfirmationKey = "clientConfirmation";
     private static final String finalAckKey = "finalAck";
+    private static final String serverSaltForAuthentication = "serverSaltForAuthentication";
+    private static final String hashedToken = "hashedToken";
 
     public static ListenableFuture<Void> sendTokenAndPasscode(final BluetoothSocket socket, final String token, final boolean passcodeRequired){
         return Futures.transformAsync(Threading.switchToBackground(),
@@ -96,5 +98,33 @@ public class AccessControlCommunicationApi {
                         return Futures.immediateFuture(null);
                     }
                 });
+    }
+
+    public static ListenableFuture<Void> sendAuthenicationRequest(final BluetoothSocket socket, final String message){
+        return Futures.transformAsync(Threading.switchToBackground(),
+                new AsyncFunction<Void, Void>() {
+                    @Override
+                    public ListenableFuture<Void> apply(Void input) throws Exception {
+                        JSONObject jsonObject = new JSONObject();
+                        jsonObject.put(serverSaltForAuthentication, message);
+                        OutputStream out = socket.getOutputStream();
+                        out.write(jsonObject.toString().getBytes());
+                        return Futures.immediateFuture(null);
+                    }
+                });
+    }
+
+    public static ListenableFuture<String> receiveAuthenticationResponse (final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, String>() {
+            @Override
+            public ListenableFuture<String> apply(Void input) throws Exception {
+                InputStream in = socket.getInputStream();
+                byte[] bytes = new byte[500];
+                in.read(bytes);
+                JSONObject json = new JSONObject(new String(bytes));
+                String receivedHashedToken = json.getString(hashedToken);
+                return Futures.immediateFuture(receivedHashedToken);
+            }
+        });
     }
 }
