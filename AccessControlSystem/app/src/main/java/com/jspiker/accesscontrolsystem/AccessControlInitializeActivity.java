@@ -358,7 +358,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                 synchronized (foundSoFarLock){
                     foundSoFar++;
                     found = foundSoFar;
-
                 }
                 setNumberOfDevicesFound(found);
                 return null;
@@ -379,7 +378,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             @Override
             public void run() {
                 numDevicesText.setVisibility(View.VISIBLE);
-                numDevicesText.setText( numberOfDevicesFound + number);
+                numDevicesText.setText(numberOfDevicesFound + number);
             }
         });
 

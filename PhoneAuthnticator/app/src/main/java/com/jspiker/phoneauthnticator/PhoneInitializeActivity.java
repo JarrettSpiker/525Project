@@ -39,6 +39,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     TextView statusText;
     ListView foundDevices;
+    BluetoothAdapter mAdapter;
 
     ArrayAdapter<BluetoothDevice> deviceAdapter;
 
@@ -61,15 +62,26 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_initialize);
         statusText = (TextView) findViewById(R.id.initialize_status);
 
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(receiver, filter);
+
+        mAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mAdapter == null) {
+            setStatusText("This device does not support bluetooth", Color.RED);
+            return;
+        }
+
+
+        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
+        foundDevices.setAdapter( deviceAdapter );
         foundDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 bluetoothServerSelected(deviceAdapter.getItem(position));
             }
         });
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(receiver, filter);
     }
 
     @Override
@@ -77,12 +89,12 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         super.onStart();
         setStatusText("Searching for devices...", Color.GRAY);
 
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+       /* BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             setStatusText("This device does not support bluetooth", Color.RED);
             return;
-        }
-        if (!bluetoothAdapter.isEnabled()) {
+        } */
+        if (!mAdapter.isEnabled()) {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
         } else {
@@ -115,8 +127,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     private void startDiscovery() {
         foundDevices.setEnabled(true);
         discoveryStarted = true;
-        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
-        BluetoothAdapter.getDefaultAdapter().startDiscovery();
+        // deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        mAdapter.startDiscovery();
+
     }
 
     private void setStatusText(final String text, final Integer color) {
@@ -140,6 +153,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
         deviceAdapter.add(device);
     }
+
 
     private void bluetoothServerSelected(final BluetoothDevice device) {
         discoveryStarted = false;
