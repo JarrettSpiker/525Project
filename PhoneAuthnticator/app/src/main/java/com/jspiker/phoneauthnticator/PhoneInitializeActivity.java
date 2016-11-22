@@ -39,6 +39,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     TextView statusText;
     ListView foundDevices;
+    BluetoothAdapter mAdapter;
 
     ArrayAdapter<BluetoothDevice> deviceAdapter;
 
@@ -61,15 +62,26 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_initialize);
         statusText = (TextView) findViewById(R.id.initialize_status);
 
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(receiver, filter);
+
+        mAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mAdapter == null) {
+            setStatusText("This device does not support bluetooth", Color.RED);
+            return;
+        }
+
+
+        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
+        foundDevices.setAdapter( deviceAdapter );
         foundDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 bluetoothServerSelected(deviceAdapter.getItem(position));
             }
         });
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(receiver, filter);
     }
 
     @Override
@@ -77,12 +89,12 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         super.onStart();
         setStatusText("Searching for devices...", Color.GRAY);
 
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+       /* BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             setStatusText("This device does not support bluetooth", Color.RED);
             return;
-        }
-        if (!bluetoothAdapter.isEnabled()) {
+        } */
+        if (!mAdapter.isEnabled()) {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
         } else {
@@ -115,8 +127,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     private void startDiscovery() {
         foundDevices.setEnabled(true);
         discoveryStarted = true;
-        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
-        BluetoothAdapter.getDefaultAdapter().startDiscovery();
+        // deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        mAdapter.startDiscovery();
+
     }
 
     private void setStatusText(final String text, final Integer color) {
@@ -140,6 +153,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
         deviceAdapter.add(device);
     }
+
 
     private void bluetoothServerSelected(final BluetoothDevice device) {
         discoveryStarted = false;
@@ -172,7 +186,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     }
 
-    private ListenableFuture<Void> handleConnectedSocketAsync(BluetoothSocket socket) {
+    private ListenableFuture<Void> handleConnectedSocketAsync(final BluetoothSocket socket) {
         final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
 
         final AtomicBoolean passcodeRequired = new AtomicBoolean(false);
@@ -229,21 +243,21 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         ListenableFuture<Void> sendPasscode = Futures.transformAsync(getPasscode, new AsyncFunction<String,Void>() {
             @Override
             public ListenableFuture apply(String passcode) throws Exception {
-                return PhoneCommunicationApi.sendPasscode(passcode);
+                return PhoneCommunicationApi.sendPasscode(socket,passcode);
             }
         });
 
         ListenableFuture<Void> waitForConfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.waitForInitializationConfirmation();
+                return PhoneCommunicationApi.waitForInitializationConfirmation(socket);
             }
         });
 
         ListenableFuture<Void> confirm =  Futures.transformAsync(waitForConfirmation, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.confirmInitialization();
+                return PhoneCommunicationApi.confirmInitialization(socket);
             }
         });
 
@@ -251,7 +265,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         ListenableFuture<Boolean> waitForFinalAck = Futures.transformAsync(confirm, new AsyncFunction<Void, Boolean>() {
             @Override
             public ListenableFuture<Boolean> apply(Void input) throws Exception {
-                return PhoneCommunicationApi.waitForFinalAck();
+                return PhoneCommunicationApi.waitForFinalAck(socket);
             }
         });
 
@@ -272,6 +286,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                 }
 
                 if(input){
+                    PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getRemoteDevice().getAddress());
                     setStatusText("Authentication was successful!", Color.GREEN);
                 } else{
                     setStatusText("Establishment of all entities failed. Authentication failed", Color.RED);

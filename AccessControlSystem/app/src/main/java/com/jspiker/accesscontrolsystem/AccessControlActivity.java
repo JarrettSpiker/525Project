@@ -120,10 +120,14 @@ public class AccessControlActivity extends AppCompatActivity {
 
     private boolean authenticateDevice(String deviceToken, BluetoothSocket bluetoothSocket){
         byte [] salt;
+        //byte [] receivedTokenHash;   So that I can compile
+        //byte [] receivedTokenHash = null;
+
         boolean authenticated;
         boolean received;
         String receivedTokenHash = "";
-        received =false;
+        received = false;
+
         // Generate the salt
         salt = getSalt();
 
