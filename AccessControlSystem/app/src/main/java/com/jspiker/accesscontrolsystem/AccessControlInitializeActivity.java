@@ -49,14 +49,14 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     private Button cancelButton;
 
-    private int numDevices = 0;
+    public int numDevices = 0;
 
     private boolean requirePasscode = false;
 
     private final Object foundSoFarLock = new Object();
     private int foundSoFar = 0; //Dont access this unless synchronized on foundSoFarLock
 
-    private CopyOnWriteArrayList<DeviceInfo> foundDevices;
+    public CopyOnWriteArrayList<DeviceInfo> foundDevices;
 
     private ListenableFuture<Void> findDevicesThread;
 
@@ -396,7 +396,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         pleaseConfirmText.setVisibility( findingDevices ? View.INVISIBLE : View.VISIBLE);
     }
 
-    private static class DeviceInfo{
+    public static class DeviceInfo{
         final BluetoothSocket socket;
         final String token;
         final String passcode;
