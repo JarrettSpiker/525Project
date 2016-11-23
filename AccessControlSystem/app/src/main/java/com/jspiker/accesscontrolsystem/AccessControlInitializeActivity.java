@@ -51,16 +51,18 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     private TextView pleaseConfirmText;
     private TextView numDevicesText;
 
+    private TextView thisDeviceIDText;
+
     private Button cancelButton;
 
-    private int numDevices = 0;
+    public int numDevices = 0;
 
     private boolean requirePasscode = false;
 
     private final Object foundSoFarLock = new Object();
     private int foundSoFar = 0; //Dont access this unless synchronized on foundSoFarLock
 
-    private CopyOnWriteArrayList<DeviceInfo> foundDevices;
+    public CopyOnWriteArrayList<DeviceInfo> foundDevices;
 
     private ListenableFuture<Void> findDevicesThread;
 
@@ -260,6 +262,13 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
         numDevicesText = (TextView) findViewById(R.id.numDevicesText);
         pleaseConfirmText = (TextView) findViewById(R.id.pleaseConfirmText);
+
+        // Will display the address of this phone to the user
+        thisDeviceIDText = (TextView) findViewById(R.id.IDText);
+        // Need to figure out how to access the device ID in order to display it - similar to client side only check yourself instead of other devices?
+        //thisDevice =
+        //thisDeviceIDText.setText("Access Control System Device ID:\n" + thisDevice.getAddress());
+
     }
 
     @Override
@@ -360,7 +369,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                 synchronized (foundSoFarLock){
                     foundSoFar++;
                     found = foundSoFar;
-
                 }
                 setNumberOfDevicesFound(found);
                 return null;
@@ -381,7 +389,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             @Override
             public void run() {
                 numDevicesText.setVisibility(View.VISIBLE);
-                numDevicesText.setText( numberOfDevicesFound + number);
+                numDevicesText.setText(numberOfDevicesFound + number);
             }
         });
 
@@ -398,7 +406,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         pleaseConfirmText.setVisibility( findingDevices ? View.INVISIBLE : View.VISIBLE);
     }
 
-    private static class DeviceInfo{
+    public static class DeviceInfo{
         final BluetoothSocket socket;
         final String token;
         final String passcode;

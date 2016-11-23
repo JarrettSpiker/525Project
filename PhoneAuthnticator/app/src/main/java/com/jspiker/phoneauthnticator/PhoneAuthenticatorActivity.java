@@ -55,7 +55,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(PhoneAuthenticatorActivity.this);
                 builder.setTitle("Reinitialize")
-                        .setMessage("This will reset the system. Are you sure?")
+                        .setMessage("This will reset this device to the system. Are you sure?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
                                 //Yes button clicked, do something
@@ -76,7 +76,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         boolean containsToken = PhoneStorageAccess.containsToken(this);
         authButton.setEnabled(containsToken);
         if(!containsToken){
-            statusText.setText("You have not initialized the system. Please press Reset");
+            statusText.setText("You have not initialized the system.");
             statusText.setTextColor(Color.RED);
         }
     }
