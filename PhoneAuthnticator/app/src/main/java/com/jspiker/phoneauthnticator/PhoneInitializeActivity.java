@@ -1,5 +1,6 @@
 package com.jspiker.phoneauthnticator;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -8,8 +9,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
@@ -32,29 +36,20 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PhoneInitializeActivity extends AppCompatActivity {
 
-    private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
+    private static final String UUID_STRING = "fb6c2ead-8d7b-47a4-bc5e-c8df7534ef4f"; //This must be the same in both the client and the server
 
-    private static final int REQUEST_ENABLE_BT_CODE = 7;
-
+    private static final int REQUEST_COARSE_LOCATION = 8;
+    private static final int REQUEST_ENABLE_BT = 7;
 
     TextView statusText;
     ListView foundDevices;
     BluetoothAdapter mAdapter;
-
     ArrayAdapter<BluetoothDevice> deviceAdapter;
+    // For debugging >
+    //ArrayAdapter<String> deviceAdapter;
+
 
     boolean discoveryStarted = false;
-
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            // When discovery finds a device
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                deviceFound(device);
-            }
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +66,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             return;
         }
 
-
         deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        // For debugging >
+        //deviceAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
 
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
         foundDevices.setAdapter( deviceAdapter );
@@ -94,20 +90,47 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             setStatusText("This device does not support bluetooth", Color.RED);
             return;
         } */
+
         if (!mAdapter.isEnabled()) {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
+            startActivityForResult(startBluetooth, REQUEST_ENABLE_BT);
+            // We need to go into the app permission settings if the list of devices is not populating
         } else {
             startDiscovery();
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_COARSE_LOCATION: {
+                startDiscovery();
+            }
+        }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        IntentFilter intFilter = new IntentFilter();
+        intFilter.addAction(BluetoothDevice.ACTION_FOUND);
+        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(receiver, intFilter);
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // Check which request we're responding to
-        if (requestCode == REQUEST_ENABLE_BT_CODE) {
+        if (requestCode == REQUEST_ENABLE_BT) {
             //returning from the "enable bluetooth" activity
             if (resultCode == RESULT_OK) {
                 startDiscovery();
@@ -120,17 +143,48 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        unregisterReceiver(receiver);
     }
 
     private void startDiscovery() {
-        foundDevices.setEnabled(true);
-        discoveryStarted = true;
-        // deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
-        mAdapter.startDiscovery();
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    REQUEST_COARSE_LOCATION);
+            return;
+        }
+
+
+        foundDevices.setEnabled(true);
+
+        discoveryStarted = true;
+        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        foundDevices.setAdapter(deviceAdapter);
+        mAdapter.startDiscovery();
     }
+
+
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            // When discovery finds a device
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                //deviceFound(device);
+                deviceAdapter.add(device);
+                // For debugging >
+                //deviceAdapter.add(device.getName() + "\n" + device.getAddress());
+            }
+            /*
+            else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+
+            }
+            */
+        }
+    };
 
     private void setStatusText(final String text, final Integer color) {
         runOnUiThread(new Runnable() {
@@ -145,19 +199,19 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     }
 
-
+    /*
     private void deviceFound(BluetoothDevice device) {
         if (!discoveryStarted) {
             return;
         }
-
         deviceAdapter.add(device);
     }
-
+    */
 
     private void bluetoothServerSelected(final BluetoothDevice device) {
         discoveryStarted = false;
-        BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+        mAdapter.cancelDiscovery();
+        //BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
         ListenableFuture<BluetoothSocket> getSocket =
                 Threading.runOnBackgroundThread(new Function<Void, BluetoothSocket>() {
                     @Override

@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class AccessControlActivity extends AppCompatActivity {
 
+    private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
+
     private CryptoUtilities cryptoUtilities = new CryptoUtilities();
     private AccessControlCommunicationApi communicationApi = new AccessControlCommunicationApi();
     private AccessControlInitializeActivity initializeActivity = new AccessControlInitializeActivity();
@@ -129,6 +131,7 @@ public class AccessControlActivity extends AppCompatActivity {
             return null;
         }
     };
+
 
 
     private ListenableFuture<Boolean> authenticateDevice(final String deviceToken, final BluetoothSocket bluetoothSocket){
