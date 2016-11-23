@@ -12,7 +12,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -21,50 +23,59 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
-                android:text="Number of devices needed:"/>
+                android:text="Number of devices needed for authentication:"/>
             <Spinner
                 android:id="@+id/numItemsSpinner"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="3"
+                android:layout_weight="2.44"
                 android:entries="@array/numberList"/>
         </LinearLayout>
         <Switch
             android:id="@+id/requirePasscodeSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="189dp"
+            android:layout_height="39dp"
             android:layout_gravity="end"
             android:showText="true"
             android:textOff="No"
             android:textOn="Yes"
             android:switchPadding="5dp"
             android:text="Require Passcode?"/>
+
+        <TextView
+            android:id="@+id/pleaseConfirmText"
+            android:layout_marginTop="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="33dp"
+            android:text="Pressing this will reset the system"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="18sp" />
+
         <Button
             android:id="@+id/confirmNumDevicesButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:text="Confirm"/>
-        <TextView
-            android:id="@+id/pleaseConfirmText"
-            android:layout_marginTop="10dp"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="Please confirm the number of users needed to authenticate"/>
+            android:text="Confirm Initialization"/>
+
         <TextView
             android:id="@+id/numDevicesText"
             android:layout_marginTop="10dp"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="32dp"
             android:text=""
             android:visibility="invisible"/>
-        <Button
-            android:id="@+id/cancelFindingDevicesButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cancel"
-            android:visibility="invisible"
-            android:enabled="false"/>
 
     </LinearLayout>
+
+    <TextView
+        android:text="TextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="110dp"
+        android:id="@+id/IDText"
+        android:textColor="@android:style/Theme.Black" />
+
 </RelativeLayout>

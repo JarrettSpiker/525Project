@@ -47,6 +47,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     private TextView pleaseConfirmText;
     private TextView numDevicesText;
 
+    private TextView thisDeviceIDText;
+
     private Button cancelButton;
 
     public int numDevices = 0;
@@ -251,6 +253,13 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
         numDevicesText = (TextView) findViewById(R.id.numDevicesText);
         pleaseConfirmText = (TextView) findViewById(R.id.pleaseConfirmText);
+
+        // Will display the address of this phone to the user
+        thisDeviceIDText = (TextView) findViewById(R.id.IDText);
+        // Need to figure out how to access the device ID in order to display it - similar to client side only check yourself instead of other devices?
+        //thisDevice =
+        //thisDeviceIDText.setText("Access Control System Device ID:\n" + thisDevice.getAddress());
+
     }
 
     @Override

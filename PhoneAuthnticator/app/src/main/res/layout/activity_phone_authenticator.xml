@@ -9,16 +9,24 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.jspiker.phoneauthnticator.PhoneAuthenticatorActivity">
 
+    <Button
+        android:id="@+id/reset_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Initialize"
+        android:layout_gravity="center_horizontal"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="118dp" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="vertical">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="This is the phone authenticator"
-            android:layout_marginBottom="100dp"/>
+        android:orientation="vertical"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true">
+
         <TextView
             android:id="@+id/auth_status_text"
             android:layout_width="match_parent"
@@ -26,19 +34,17 @@
             android:text="You have not yet attempted authentication"
             android:layout_marginBottom="10dp"
             android:textColor="#dfd400"/>
-        <Button
-            android:id="@+id/authenticate_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Authenticate"
-            android:layout_gravity="center_horizontal"/>
-        <Button
-            android:id="@+id/reset_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Reset"
-            android:layout_gravity="center_horizontal"/>
     </LinearLayout>
+
+    <Button
+        android:id="@+id/authenticate_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Authenticate"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="107dp"
+        android:layout_below="@+id/linearLayout2"
+        android:layout_centerHorizontal="true" />
 
 
 </RelativeLayout>
