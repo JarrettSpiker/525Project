@@ -13,6 +13,7 @@ public class AccessControlStorage {
     private static final String PREFERENCE_KEY = "AUTH_PREFS";
     private static final String TOKEN_KEY_PREFIX = "TOKEN_PREF_";
     private static final String PASSCODE_KEY_PREFIX = "PASSCODE_PREF_";
+    private static final String NUM_DEVICES = "NUM_DEVICES";
 
     public static void setTokenForDevice(Context context, String macAddress, String token){
         SharedPreferences.Editor editor =  context.getSharedPreferences(PREFERENCE_KEY, Context.MODE_PRIVATE).edit();
@@ -46,5 +47,14 @@ public class AccessControlStorage {
         editor.commit();
     }
 
+    public static void setNumDevices(Context context, int numDevices){
+        SharedPreferences.Editor editor = context.getSharedPreferences(PREFERENCE_KEY, Context.MODE_PRIVATE).edit();
+        editor.putInt(NUM_DEVICES, numDevices);
+        editor.commit();
+    }
+
+    public static int getNumDevices(Context context){
+        return context.getSharedPreferences(PREFERENCE_KEY, Context.MODE_PRIVATE).getInt(NUM_DEVICES, 0);
+    }
 
 }
