@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.Futures.allAsList;
@@ -69,7 +70,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     private Function<Void,Void> findDevicesFunction =  new Function<Void, Void>() {
         @Override
         public Void apply(Void input) {
-            BluetoothServerSocket serverSocket = null;
+           final  AtomicReference<BluetoothServerSocket> serverSocket = new AtomicReference<>();
             if (ContextCompat.checkSelfPermission(AccessControlInitializeActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
                     != PackageManager.PERMISSION_GRANTED) {
 
@@ -77,41 +78,50 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             }
             try {
                 try {
-                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING));
+                    serverSocket.set(BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING)));
                 } catch (IOException e) {
                     handleBluetoothFailed("Bluetooth socket creation failed: " + e.getMessage());
                     return  null;
                 }
 
                 BluetoothSocket socket = null;
-                int connectedSoFar = 0;
-                ArrayList<ListenableFuture<Void>> connections = new ArrayList<>();
+                final AtomicInteger connectedSoFar = new AtomicInteger(0);
                 //keep looking until we find enough devices
-                while (connectedSoFar < numDevices) {
+                while (connectedSoFar.get() < numDevices) {
                     try {
-                        socket = serverSocket.accept();
+                        socket = serverSocket.get().accept();
                     } catch (IOException e) {
                         continue;
                     }
 
                     if (socket != null) {
                         // Do work to manage the connection (in a separate thread)
-                        connections.add(handlePhoneConnected(socket));
+
+
+                        ListenableFuture<Void> connect = handlePhoneConnected(socket);
+                        Futures.transform(connect, new Function<Void, Void>() {
+                            @Override
+                            public Void apply(Void input) {
+                               int connected = connectedSoFar.incrementAndGet();
+                                if(connected >= numDevices){
+                                    try {
+                                        serverSocket.get().close();
+                                    }catch (IOException e){
+                                        //dodge
+                                    }
+                                }
+                                return  null;
+                            }
+                        });
+                        
                     }
                 }
 
-                Futures.whenAllSucceed(connections).call(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        completeRegistration();
-                        return null;
-                    }
-                });
                 completeRegistration();
             } finally {
                 if(serverSocket != null){
                     try {
-                        serverSocket.close();
+                        serverSocket.get().close();
                     } catch (IOException e) {
                     }
                 }

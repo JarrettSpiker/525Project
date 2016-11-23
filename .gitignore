@@ -8,3 +8,5 @@
 */captures
 */coverity.xml
 */coverity/*
+*/gradle.xml
+*/vcs.xml
