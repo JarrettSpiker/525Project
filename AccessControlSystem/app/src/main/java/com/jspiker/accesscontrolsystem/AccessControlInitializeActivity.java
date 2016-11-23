@@ -218,6 +218,10 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                 numDevicesText.setTextColor(Color.GREEN);
             }
         });
+
+        // Save the number of devices to storage
+        AccessControlStorage.setNumDevices(this, numDevices);
+
         return Futures.immediateFuture(null);
     }
 
@@ -414,6 +418,10 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         numDevicesSpinner.setEnabled(!findingDevices);
         pleaseConfirmText.setEnabled(!findingDevices);
         pleaseConfirmText.setVisibility( findingDevices ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    public String getUuidString(){
+        return UUID_STRING;
     }
 
     public static class DeviceInfo{

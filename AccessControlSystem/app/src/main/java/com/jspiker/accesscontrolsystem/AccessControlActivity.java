@@ -13,13 +13,17 @@ import android.view.View;
 import android.widget.Button;
 
 import com.google.common.base.Function;
+import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AccessControlActivity extends AppCompatActivity {
 
@@ -74,34 +78,43 @@ public class AccessControlActivity extends AppCompatActivity {
             BluetoothServerSocket serverSocket = null;
             try {
                 try {
-                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Wait for authentication requests", UUID.fromString(UUID_STRING));
+                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Wait for authentication requests", UUID.fromString(initializeActivity.getUuidString()));
                 } catch (IOException e) {
                     return  null;
                 }
 
                 BluetoothSocket socket = null;
-                int authenticatedSoFar = 0;
+                final AtomicInteger authenticatedSoFar = new AtomicInteger(0);
                 String macAddress;
                 String deviceToken;
-                ArrayList<ListenableFuture<Void>> connections = new ArrayList<>();
+                ArrayList<ListenableFuture<Boolean>> authenticationThreads = new ArrayList<>();
                 //keep looking until we find enough devices
-                while (authenticatedSoFar < initializeActivity.numDevices) {
+                while (authenticatedSoFar.get() < AccessControlStorage.getNumDevices(AccessControlActivity.this)) {
                     try {
-                        socket = serverSocket.accept();
+                        socket = serverSocket.accept(10000);
                     } catch (IOException e) {
                         continue;
                     }
 
                     if (socket != null) {
                         macAddress = socket.getRemoteDevice().getAddress();
-                        deviceToken = AccessControlStorage.getTokenForDevice(getParent(), macAddress);
-                        authenticateDevice(deviceToken, socket);
+                        deviceToken = AccessControlStorage.getTokenForDevice(AccessControlActivity.this, macAddress);
+                        Futures.transform(authenticateDevice(deviceToken, socket), new Function<Boolean, Void>() {
+                            @Override
+                            public Void apply(Boolean input) {
+
+                                if(input) authenticatedSoFar.getAndIncrement();
+                                return null;
+                            }
+                        });
                     }
+
                 }
 
-                Futures.whenAllSucceed(connections).call(new Callable<Void>() {
+                Futures.whenAllSucceed(authenticationThreads).call(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
+                        // Successfully unlock the system
 
                         return null;
                     }
@@ -120,32 +133,50 @@ public class AccessControlActivity extends AppCompatActivity {
     };
 
 
-    private boolean authenticateDevice(String deviceToken, BluetoothSocket bluetoothSocket){
-        byte [] salt;
-        salt = getSalt();
-        //byte [] receivedTokenHash;   So that I can compile
-        //byte [] receivedTokenHash = null;
 
-        boolean authenticated;
-        boolean received;
-        String receivedTokenHash = "";
-        received = false;
+    private ListenableFuture<Boolean> authenticateDevice(final String deviceToken, final BluetoothSocket bluetoothSocket){
+        ListenableFuture<Void> switchtoBackground = Threading.switchToBackground();
 
-        // Generate the salt
-        salt = getSalt();
+        ListenableFuture<Boolean> authenticate = Futures.transform(switchtoBackground, new Function<Void, Boolean>() {
+            @Override
+            public Boolean apply(Void input) {
+                byte [] salt;
+                //byte [] receivedTokenHash;   So that I can compile
+                //byte [] receivedTokenHash = null;
 
-        // Step 1: Send salt to device
-        AccessControlCommunicationApi.sendAuthenicationRequest(bluetoothSocket, salt.toString());
+                boolean authenticated;
+                boolean received;
+                String receivedTokenHash = "";
+                received = false;
 
-        // Step 2: Wait for the receivedHashedToken
-        while(!received){
-            receivedTokenHash = AccessControlCommunicationApi.receiveAuthenticationResponse(bluetoothSocket).toString();
-            if (receivedTokenHash != null || receivedTokenHash != "") received = true;
-        }
+                // Generate the salt
+                salt = getSalt();
 
-        authenticated = cryptoUtilities.verifyTokenHash(deviceToken, salt, receivedTokenHash.getBytes());
+                // Step 1: Send salt to device
+                AccessControlCommunicationApi.sendAuthenicationRequest(bluetoothSocket, new String (salt));
 
-        return authenticated;
+                // Step 2: Wait for the receivedHashedToken
+                while(!received){
+                    try {
+                        receivedTokenHash = AccessControlCommunicationApi.receiveAuthenticationResponse(bluetoothSocket).get();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        return false;
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                    if (receivedTokenHash != null || receivedTokenHash != "") received = true;
+                }
+
+                authenticated = cryptoUtilities.verifyTokenHash(deviceToken, salt, receivedTokenHash.getBytes());
+
+                // Send fail/success response back to the phone
+                AccessControlCommunicationApi.sendFinalAck(bluetoothSocket, authenticated);
+
+                return authenticated;
+            }
+        });
     }
 
 
