@@ -1,5 +1,6 @@
 package com.jspiker.phoneauthnticator;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -8,8 +9,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
@@ -32,10 +36,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PhoneInitializeActivity extends AppCompatActivity {
 
-    private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
+    private static final String UUID_STRING = "fb6c2ead-8d7b-47a4-bc5e-c8df7534ef4f"; //This must be the same in both the client and the server
 
     private static final int REQUEST_ENABLE_BT_CODE = 7;
-
+    private static final int REQUEST_COARSE_LOCATION = 8;
 
     TextView statusText;
     ListView foundDevices;
@@ -68,8 +72,6 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                 bluetoothServerSelected(deviceAdapter.getItem(position));
             }
         });
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(receiver, filter);
     }
 
     @Override
@@ -92,6 +94,32 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
 
     @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_COARSE_LOCATION: {
+                startDiscovery();
+            }
+        }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        IntentFilter intFilter = new IntentFilter();
+        intFilter.addAction(BluetoothDevice.ACTION_FOUND);
+        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(receiver, intFilter);
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // Check which request we're responding to
@@ -108,14 +136,27 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        unregisterReceiver(receiver);
     }
 
     private void startDiscovery() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    REQUEST_COARSE_LOCATION);
+            return;
+        }
+
+
         foundDevices.setEnabled(true);
         discoveryStarted = true;
+
         deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        foundDevices.setAdapter(deviceAdapter);
+
+
         BluetoothAdapter.getDefaultAdapter().startDiscovery();
     }
 

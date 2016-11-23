@@ -1,11 +1,15 @@
 package com.jspiker.accesscontrolsystem;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -35,7 +39,7 @@ import static com.google.common.util.concurrent.Futures.allAsList;
 public class AccessControlInitializeActivity extends AppCompatActivity {
 
 
-    private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
+    private static final String UUID_STRING = "fb6c2ead-8d7b-47a4-bc5e-c8df7534ef4f"; //This must be the same in both the client and the server
     private static final int REQUEST_ENABLE_BT_CODE = 7;
     private static final int REQUEST_ENABLE_DISC = 8;
 
@@ -64,6 +68,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         @Override
         public Void apply(Void input) {
             BluetoothServerSocket serverSocket = null;
+            if (ContextCompat.checkSelfPermission(AccessControlInitializeActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                System.out.print("Here");
+            }
             try {
                 try {
                     serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING));
@@ -97,7 +106,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                     }
                 });
                 completeRegistration();
-            }finally {
+            } finally {
                 if(serverSocket != null){
                     try {
                         serverSocket.close();
@@ -288,7 +297,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     private void makeDiscoverable(){
         Intent discoverableIntent = new
         Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3600);
         startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISC);
     }
 
@@ -314,15 +323,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     private  ListenableFuture<Void> handlePhoneConnected(final BluetoothSocket socket){
-        final ListenableFuture<Void> connectSocket = Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, Void>() {
-            @Override
-            public ListenableFuture<Void> apply(Void input) throws Exception {
-                socket.connect();
-                return null;
-            }
-        });
 
-        ListenableFuture<String> generateToken =Futures.transform(connectSocket, new Function<Void, String>() {
+        ListenableFuture<String> generateToken =Futures.transform(Threading.switchToBackground(), new Function<Void, String>() {
                 @Override
                 public String apply(Void input) {
                     SecureRandom random = new SecureRandom();

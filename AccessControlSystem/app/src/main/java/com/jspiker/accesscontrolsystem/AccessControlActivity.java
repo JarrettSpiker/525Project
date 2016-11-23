@@ -51,7 +51,7 @@ public class AccessControlActivity extends AppCompatActivity {
 
     private boolean authenticateDevice(String deviceToken){
         byte [] salt;
-        byte [] receivedTokenHash;
+        byte [] receivedTokenHash = null;
         salt = getSalt();
         boolean authenticated;
 
