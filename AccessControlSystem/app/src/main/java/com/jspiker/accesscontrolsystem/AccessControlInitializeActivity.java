@@ -206,7 +206,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                     return  null;
                 }
 
-                BluetoothSocket socket = null;
+                BluetoothSocket socket;
                 final AtomicInteger connectedSoFar = new AtomicInteger(0); //number of successful connections
 
                 //keep looking until we find the user specified number of devices
@@ -248,10 +248,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             } finally {
 
                 //ensure that the server socket eventually gets closed
-                if(serverSocket != null){
+                if(serverSocket.get() != null){
                     try {
                         serverSocket.get().close();
                     } catch (IOException e) {
+                        //dodge the exception
                     }
                 }
             }
@@ -319,7 +320,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     /**
      * Send a confirmation to each waiting device, wait for them to all acknowledge ,
      * and then notify all devices that registration was sucessful
-     * @return
      */
     private ListenableFuture<Void> completeRegistration(){
 
@@ -394,7 +394,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
      * Update UI to show that registration was successful
      * send a final ack to all devices letting them know that registration was successful
      * Save the token and passcode for each device
-     * @return
      */
     private ListenableFuture<Void> allDevicesConfirmed(){
 
@@ -432,7 +431,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     /**
      * Update UI to show that registration failed
      * send a final ack to all devices letting them know that registration failed
-     * @return
      */
     private  ListenableFuture<Void> deviceRejectedConnection(){
         //send a final ack to all devices letting them know that registration failed
@@ -455,7 +453,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     /**
      * Send an ack to each device letting them know if registration was successful or not
-     * @param positive
      */
     private void sendFinalAcks(boolean positive){
         for(DeviceInfo deviceInfo : foundDevices){
@@ -465,7 +462,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     /**
      * Update the UI to show how many devices have been found
-     * @param number
      */
     private void setNumberOfDevicesFound(final int number){
         runOnUiThread(new Runnable() {
