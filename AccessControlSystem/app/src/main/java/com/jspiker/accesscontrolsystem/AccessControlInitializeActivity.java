@@ -16,6 +16,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.common.base.Function;
+import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -219,22 +220,25 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
                     if (socket != null) {
                         // Do work to manage the connection (in a separate thread)
-                        ListenableFuture<Void> connect = handlePhoneConnected(socket);
+                        ListenableFuture<Boolean> connect = handlePhoneConnected(socket);
 
                         //when "handling the connection" is done, increment the number of devices we've found
-                        Futures.transform(connect, new Function<Void, Void>() {
+                        Futures.transform(connect, new Function<Boolean, Void>() {
                             @Override
-                            public Void apply(Void input) {
-                                int connected = connectedSoFar.incrementAndGet();
+                            public Void apply(Boolean input) {
+                                if(input){
+                                    int connected = connectedSoFar.incrementAndGet();
 
-                                //if we have found enough devices, close the server socket to avoid a deadlock
-                                if(connected >= numDevices){
-                                    try {
-                                        serverSocket.get().close();
-                                    }catch (IOException e){
-                                        //dodge
+                                    //if we have found enough devices, close the server socket to avoid a deadlock
+                                    if(connected >= numDevices){
+                                        try {
+                                            serverSocket.get().close();
+                                        }catch (IOException e){
+                                            //dodge
+                                        }
                                     }
                                 }
+
                                 return  null;
                             }
                         });
@@ -263,7 +267,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     /**
      * Take a socket (connection to a new phone) and establish the token and passcode
      */
-    private  ListenableFuture<Void> handlePhoneConnected(final BluetoothSocket socket){
+    private  ListenableFuture<Boolean> handlePhoneConnected(final BluetoothSocket socket){
 
         //generate a random token
         ListenableFuture<String> generateToken =Futures.transform(Threading.switchToBackground(), new Function<Void, String>() {
@@ -295,23 +299,23 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         });
 
         //Update the ui with the number of devices we have found, and save a refrence to the device, so that we can send a confirmation later
-        ListenableFuture<Void> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Void>() {
+        ListenableFuture<Boolean> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Boolean>() {
             @Override
-            public Void apply(String input) {
+            public Boolean apply(String input) {
                 DeviceInfo info = new DeviceInfo(socket, socket.getRemoteDevice().getAddress(), token.get(), passcode.get());
                 foundDevices.add(info);
                 int found = ++foundSoFar;
                 setNumberOfDevicesFound(found);
-                return null;
+                return true;
             }
         });
 
         //If any of the above processes fail, fail silently
-        return Futures.catching(updateDevicesFound, Throwable.class, new Function<Throwable, Void>() {
+        return Futures.catching(updateDevicesFound, Throwable.class, new Function<Throwable, Boolean>() {
             @Override
-            public Void apply(Throwable input) {
+            public Boolean apply(Throwable input) {
                 Log.w("Reinit error", input.getMessage());
-                return null;
+                return false;
             }
         });
     }
@@ -327,16 +331,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         ArrayList<ListenableFuture<Boolean>> waitForConfirmationList = new ArrayList<>();
         for(final DeviceInfo device : foundDevices){
             ListenableFuture<Boolean> waitForDevice = Futures.transformAsync(
-                    Threading.runOnBackgroundThread(new Function<Void, DeviceInfo>() {
+                    Threading.switchToBackground(),
+                            new AsyncFunction<Void, Boolean>() {
                                 @Override
-                                public DeviceInfo apply(Void input) {
-                                    return device;//This just switches to the background thread
-                                }
-                            }),
-                            new AsyncFunction<DeviceInfo, Boolean>() {
-                                @Override
-                                public ListenableFuture<Boolean> apply(DeviceInfo deviceInfo) throws Exception {
-                                    return AccessControlCommunicationApi.receiveConfirmationResponse(deviceInfo.socket);
+                                public ListenableFuture<Boolean> apply(Void v) throws Exception {
+                                    return AccessControlCommunicationApi.receiveConfirmationResponse(device.socket);
                                 }
                             });
 

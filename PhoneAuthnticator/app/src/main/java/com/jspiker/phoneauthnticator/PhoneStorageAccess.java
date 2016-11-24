@@ -41,7 +41,7 @@ public class PhoneStorageAccess {
 
     public static synchronized void setServerMacAddress(Context context, String macAddress){
         SharedPreferences.Editor editor =  context.getSharedPreferences(PREFERENCE_KEY, Context.MODE_PRIVATE).edit();
-        editor.putString(macAddress, macAddress);
+        editor.putString(macAddressPref, macAddress);
         editor.commit();
     }
 

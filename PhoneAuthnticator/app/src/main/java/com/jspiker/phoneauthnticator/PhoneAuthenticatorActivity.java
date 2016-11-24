@@ -148,7 +148,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
 
             // Loop through paired devices
             for (BluetoothDevice device : pairedDevices) {
-                if (device.getAddress() == savedServerMacAddress) {
+                if (device.getAddress().equals(savedServerMacAddress) ){
                     pairedDevice = device;
                     break;
                 }
@@ -157,25 +157,18 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
             try {
                 clientSocket = pairedDevice.createRfcommSocketToServiceRecord(UUID.fromString("19ca4e12-abd6-4bcd-9937-37c8ccdad5f4"));
                 clientSocket.connect();
-                try{
-                    salt = PhoneCommunicationApi.receiveAuthenticationResponse(clientSocket).get();
-                    tokenHash = cryptoUtilities.hashToken(PhoneStorageAccess.getToken(this), salt.getBytes());
-                    PhoneCommunicationApi.sendAuthenicationRequest(clientSocket, new String(tokenHash));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    return false;
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                    return false;
-                }
 
-            } catch (IOException e) {
+                salt = PhoneCommunicationApi.receiveAuthenticationResponse(clientSocket).get();
+                tokenHash = cryptoUtilities.hashToken(PhoneStorageAccess.getToken(this), salt.getBytes());
+                PhoneCommunicationApi.sendAuthenicationRequest(clientSocket, new String(tokenHash));
+
+            } catch (Exception e) {
                 e.printStackTrace();
+                return false;
             }
 
-
-
         }
+        return true;
     }
 
 }

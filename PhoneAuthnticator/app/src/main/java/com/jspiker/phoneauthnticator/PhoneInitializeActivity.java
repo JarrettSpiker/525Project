@@ -255,7 +255,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             @Override
             public String apply(Void input) {
 
-                final AtomicReference<String> passcode = new AtomicReference<>();
+                final AtomicReference<String> passcode = new AtomicReference<>("");
                 final Object o = new Object();
                 if (passcodeRequired.get()) {
                     runOnUiThread(new Runnable() {
