@@ -259,6 +259,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             public String apply(Void input) {
 
                 final AtomicReference<String> passcode = new AtomicReference<>();
+                final Object o = new Object();
                 if (passcodeRequired.get()) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -277,7 +278,10 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     passcode.set(passcodeBox.getText().toString());
-                                    notify();
+                                    synchronized (o){
+                                        o.notify();
+                                    }
+
                                 }
                             });
 
@@ -285,7 +289,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                         }
                     });
                     try {
-                        wait();
+                        synchronized (o) {
+                            o.wait();
+                        }
                     } catch (InterruptedException e) {
                     }
                 }
@@ -341,7 +347,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
                 if(input){
                     PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getRemoteDevice().getAddress());
-                    setStatusText("Authentication was successful!", Color.GREEN);
+                    setStatusText("Registration was successful!", Color.GREEN);
                 } else{
                     setStatusText("Establishment of all entities failed. Authentication failed", Color.RED);
                 }

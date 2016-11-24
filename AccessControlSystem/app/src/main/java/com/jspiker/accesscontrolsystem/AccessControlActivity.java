@@ -1,5 +1,6 @@
 package com.jspiker.accesscontrolsystem;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
@@ -11,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Booleans;
@@ -29,19 +31,25 @@ public class AccessControlActivity extends AppCompatActivity {
 
     private static final String UUID_STRING = "525ProjectUUID"; //This must be the same in both the client and the server
 
+    private static final int INIT_REQUEST_CODE = 1;
+    public static final String INIT_RESULT_KEY = "Init_Success";
+
+
     private CryptoUtilities cryptoUtilities = new CryptoUtilities();
     private AccessControlCommunicationApi communicationApi = new AccessControlCommunicationApi();
     private AccessControlInitializeActivity initializeActivity = new AccessControlInitializeActivity();
 
     private ListenableFuture<Void> waitForAuthenticationRequestThread;
-
+    private BluetoothServerSocket serverSocket;
+    private TextView statusText;
+    private TextView statusTextTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_access_control);
 
-        Button reinitButton = (Button) findViewById(R.id.reinitialize_button);
+        final Button reinitButton = (Button) findViewById(R.id.reinitialize_button);
         reinitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -59,13 +67,46 @@ public class AccessControlActivity extends AppCompatActivity {
 
             }
         });
-        waitForAuthenticationRequestThread = Threading.runOnBackgroundThread(waitForAuthenticationRequests);
+
+
+        Button startAuthButton = (Button)findViewById(R.id.startAuthButton);
+        startAuthButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                reinitButton.setEnabled(false);
+                waitForAuthenticationRequestThread = Threading.runOnBackgroundThread(waitForAuthenticationRequests);
+            }
+        });
+
+        statusTextTitle = (TextView) findViewById(R.id.statusHeader);
+        statusText = (TextView) findViewById(R.id.statusText);
+
+        if(AccessControlStorage.getNumDevices(this) != 0){
+            statusText.setText("Initialized. Not Authenticated");
+        }
+
     }
 
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch(requestCode) {
+            case (INIT_REQUEST_CODE) : {
+                if (resultCode == Activity.RESULT_OK) {
+                    boolean success = data.getBooleanExtra(INIT_RESULT_KEY, false);
+                    if(success){
+                        statusText.setText("Initialized. Not Authenticated");
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     private void reinitialize(){
         Intent intent = new Intent(this, AccessControlInitializeActivity.class);
-        startActivity(intent);
+        startActivityForResult(intent, INIT_REQUEST_CODE);
     }
 
     private byte[] getSalt(){
@@ -75,7 +116,6 @@ public class AccessControlActivity extends AppCompatActivity {
     private Function<Void,Void> waitForAuthenticationRequests =  new Function<Void, Void>() {
         @Override
         public Void apply(Void input) {
-            BluetoothServerSocket serverSocket = null;
             try {
                 try {
                     serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Wait for authentication requests", UUID.fromString(initializeActivity.getUuidString()));
@@ -90,8 +130,9 @@ public class AccessControlActivity extends AppCompatActivity {
                 ArrayList<ListenableFuture<Boolean>> authenticationThreads = new ArrayList<>();
                 //keep looking until we find enough devices
                 while (authenticatedSoFar.get() < AccessControlStorage.getNumDevices(AccessControlActivity.this)) {
+                    socket = null;
                     try {
-                        socket = serverSocket.accept(10000);
+                        socket = serverSocket.accept();
                     } catch (IOException e) {
                         continue;
                     }
@@ -103,7 +144,16 @@ public class AccessControlActivity extends AppCompatActivity {
                             @Override
                             public Void apply(Boolean input) {
 
-                                if(input) authenticatedSoFar.getAndIncrement();
+                                if(input){
+                                    int connected= authenticatedSoFar.incrementAndGet();
+                                    if(connected >=AccessControlStorage.getNumDevices(AccessControlActivity.this) ){
+                                        try {
+                                            serverSocket.close();
+                                        } catch (IOException e) {
+                                            //ok exception
+                                        }
+                                    }
+                                }
                                 return null;
                             }
                         });
@@ -111,12 +161,12 @@ public class AccessControlActivity extends AppCompatActivity {
 
                 }
 
-                Futures.whenAllSucceed(authenticationThreads).call(new Callable<Void>() {
+                runOnUiThread(new Runnable() {
                     @Override
-                    public Void call() throws Exception {
-                        // Successfully unlock the system
-
-                        return null;
+                    public void run() {
+                        statusText.setText("Authenticated!!!!");
+                        statusText.setTextColor(Color.GREEN);
+                        statusTextTitle.setTextColor(Color.GREEN);
                     }
                 });
 
@@ -177,6 +227,7 @@ public class AccessControlActivity extends AppCompatActivity {
                 return authenticated;
             }
         });
+        return authenticate;
     }
 
 

@@ -37,7 +37,8 @@ public class PhoneCommunicationApi {
                 InputStream in = socket.getInputStream();
                 byte[] bytes = new byte[500];
                 in.read(bytes);
-                JSONObject json = new JSONObject(new String(bytes));
+                String s = new String(bytes);
+                JSONObject json = new JSONObject(s);
                 TokenAndPasscodeResponse response = new TokenAndPasscodeResponse(json.getString(tokenKey), json.getBoolean(passCodeRequiredKey));
                 return Futures.immediateFuture(response);
             }

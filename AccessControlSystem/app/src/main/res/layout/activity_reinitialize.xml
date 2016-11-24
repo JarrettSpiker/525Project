@@ -15,6 +15,7 @@
         android:orientation="vertical"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -63,19 +64,26 @@
             android:layout_marginTop="10dp"
             android:layout_width="match_parent"
             android:layout_height="32dp"
-            android:text=""
+            android:text="No devices found"
             android:visibility="invisible"/>
-
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/completeButton"
+            android:text="Complete"
+            android:visibility="invisible"
+            android:enabled="false"
+            />
     </LinearLayout>
 
     <TextView
-        android:text="TextView"
+        android:text="Device ID: "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="110dp"
         android:id="@+id/IDText"
-        android:textColor="@android:style/Theme.Black" />
+        android:textColor="@android:color/black" />
 
 </RelativeLayout>

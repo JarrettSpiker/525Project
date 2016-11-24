@@ -1,6 +1,7 @@
 package com.jspiker.accesscontrolsystem;
 
 import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.Futures.allAsList;
@@ -53,9 +55,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     private TextView thisDeviceIDText;
 
-    private Button cancelButton;
+    private Button completeButton;
 
     public int numDevices = 0;
+
+    private boolean success = false;
 
     private boolean requirePasscode = false;
 
@@ -69,7 +73,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     private Function<Void,Void> findDevicesFunction =  new Function<Void, Void>() {
         @Override
         public Void apply(Void input) {
-            BluetoothServerSocket serverSocket = null;
+           final  AtomicReference<BluetoothServerSocket> serverSocket = new AtomicReference<>();
             if (ContextCompat.checkSelfPermission(AccessControlInitializeActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
                     != PackageManager.PERMISSION_GRANTED) {
 
@@ -77,41 +81,50 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             }
             try {
                 try {
-                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING));
+                    serverSocket.set(BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING)));
                 } catch (IOException e) {
                     handleBluetoothFailed("Bluetooth socket creation failed: " + e.getMessage());
                     return  null;
                 }
 
                 BluetoothSocket socket = null;
-                int connectedSoFar = 0;
-                ArrayList<ListenableFuture<Void>> connections = new ArrayList<>();
+                final AtomicInteger connectedSoFar = new AtomicInteger(0);
                 //keep looking until we find enough devices
-                while (connectedSoFar < numDevices) {
+                while (connectedSoFar.get() < numDevices) {
                     try {
-                        socket = serverSocket.accept();
+                        socket = serverSocket.get().accept();
                     } catch (IOException e) {
                         continue;
                     }
 
                     if (socket != null) {
                         // Do work to manage the connection (in a separate thread)
-                        connections.add(handlePhoneConnected(socket));
+
+
+                        ListenableFuture<Void> connect = handlePhoneConnected(socket);
+                        Futures.transform(connect, new Function<Void, Void>() {
+                            @Override
+                            public Void apply(Void input) {
+                               int connected = connectedSoFar.incrementAndGet();
+                                if(connected >= numDevices){
+                                    try {
+                                        serverSocket.get().close();
+                                    }catch (IOException e){
+                                        //dodge
+                                    }
+                                }
+                                return  null;
+                            }
+                        });
+                        
                     }
                 }
 
-                Futures.whenAllSucceed(connections).call(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        completeRegistration();
-                        return null;
-                    }
-                });
                 completeRegistration();
             } finally {
                 if(serverSocket != null){
                     try {
-                        serverSocket.close();
+                        serverSocket.get().close();
                     } catch (IOException e) {
                     }
                 }
@@ -119,6 +132,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             return null;
         }
     };
+
 
 
     private ListenableFuture<Void> completeRegistration(){
@@ -206,11 +220,16 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             public void run() {
                 numDevicesText.setText("Setup complete!");
                 numDevicesText.setTextColor(Color.GREEN);
+                completeButton.setVisibility(View.VISIBLE);
+                completeButton.setEnabled(true);
+
             }
         });
 
         // Save the number of devices to storage
         AccessControlStorage.setNumDevices(this, numDevices);
+
+        success = true;
 
         return Futures.immediateFuture(null);
     }
@@ -254,15 +273,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             }
         });
 
-        cancelButton = (Button) findViewById(R.id.cancelFindingDevicesButton);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(findDevicesThread != null){
-                    findDevicesThread.cancel(true);
-                }
-            }
-        });
 
         numDevicesText = (TextView) findViewById(R.id.numDevicesText);
         pleaseConfirmText = (TextView) findViewById(R.id.pleaseConfirmText);
@@ -273,6 +283,16 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         //thisDevice =
         //thisDeviceIDText.setText("Access Control System Device ID:\n" + thisDevice.getAddress());
 
+        completeButton = (Button) findViewById(R.id.completeButton);
+        completeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra(AccessControlActivity.INIT_RESULT_KEY, success);
+                setResult(Activity.RESULT_OK, resultIntent);
+                finish();
+            }
+        });
     }
 
     @Override
@@ -400,8 +420,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     private void switchToFindingDevicesMode(boolean findingDevices){
-        cancelButton.setVisibility(findingDevices ? View.VISIBLE : View.INVISIBLE);
-        cancelButton.setEnabled(findingDevices);
+//        cancelButton.setVisibility(findingDevices ? View.VISIBLE : View.INVISIBLE);
+//        cancelButton.setEnabled(findingDevices);
         numDevicesText.setEnabled(findingDevices);
 
         requirePasscodeSwitch.setEnabled(!findingDevices);
