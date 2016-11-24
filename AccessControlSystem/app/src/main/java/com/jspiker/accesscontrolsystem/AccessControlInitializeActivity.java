@@ -1,6 +1,7 @@
 package com.jspiker.accesscontrolsystem;
 
 import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
@@ -54,9 +55,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
     private TextView thisDeviceIDText;
 
-    private Button cancelButton;
+    private Button completeButton;
 
     public int numDevices = 0;
+
+    private boolean success = false;
 
     private boolean requirePasscode = false;
 
@@ -129,6 +132,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             return null;
         }
     };
+
 
 
     private ListenableFuture<Void> completeRegistration(){
@@ -216,11 +220,16 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             public void run() {
                 numDevicesText.setText("Setup complete!");
                 numDevicesText.setTextColor(Color.GREEN);
+                completeButton.setVisibility(View.VISIBLE);
+                completeButton.setEnabled(true);
+
             }
         });
 
         // Save the number of devices to storage
         AccessControlStorage.setNumDevices(this, numDevices);
+
+        success = true;
 
         return Futures.immediateFuture(null);
     }
@@ -264,15 +273,6 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
             }
         });
 
-        cancelButton = (Button) findViewById(R.id.cancelFindingDevicesButton);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(findDevicesThread != null){
-                    findDevicesThread.cancel(true);
-                }
-            }
-        });
 
         numDevicesText = (TextView) findViewById(R.id.numDevicesText);
         pleaseConfirmText = (TextView) findViewById(R.id.pleaseConfirmText);
@@ -283,6 +283,16 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         //thisDevice =
         //thisDeviceIDText.setText("Access Control System Device ID:\n" + thisDevice.getAddress());
 
+        completeButton = (Button) findViewById(R.id.completeButton);
+        completeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra(AccessControlActivity.INIT_RESULT_KEY, success);
+                setResult(Activity.RESULT_OK, resultIntent);
+                finish();
+            }
+        });
     }
 
     @Override
@@ -410,8 +420,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     private void switchToFindingDevicesMode(boolean findingDevices){
-        cancelButton.setVisibility(findingDevices ? View.VISIBLE : View.INVISIBLE);
-        cancelButton.setEnabled(findingDevices);
+//        cancelButton.setVisibility(findingDevices ? View.VISIBLE : View.INVISIBLE);
+//        cancelButton.setEnabled(findingDevices);
         numDevicesText.setEnabled(findingDevices);
 
         requirePasscodeSwitch.setEnabled(!findingDevices);
