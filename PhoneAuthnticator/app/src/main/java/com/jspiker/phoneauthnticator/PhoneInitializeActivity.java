@@ -45,9 +45,6 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     ListView foundDevices;
     BluetoothAdapter mAdapter;
     ArrayAdapter<BluetoothDevice> deviceAdapter;
-    // For debugging >
-    //ArrayAdapter<String> deviceAdapter;
-
 
     boolean discoveryStarted = false;
 
