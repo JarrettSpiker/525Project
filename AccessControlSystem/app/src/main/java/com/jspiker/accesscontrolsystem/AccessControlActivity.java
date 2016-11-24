@@ -118,7 +118,7 @@ public class AccessControlActivity extends AppCompatActivity {
         public Void apply(Void input) {
             try {
                 try {
-                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Wait for authentication requests", UUID.fromString(initializeActivity.getUuidString()));
+                    serverSocket = BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Wait for authentication requests", UUID.fromString("19ca4e12-abd6-4bcd-9937-37c8ccdad5f4"));
                 } catch (IOException e) {
                     return  null;
                 }

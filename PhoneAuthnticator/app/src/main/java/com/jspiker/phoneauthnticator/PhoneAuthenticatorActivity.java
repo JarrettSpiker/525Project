@@ -1,6 +1,8 @@
 package com.jspiker.phoneauthnticator;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
@@ -10,6 +12,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public class PhoneAuthenticatorActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT_CODE = 7;
@@ -92,7 +99,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         if (requestCode == REQUEST_ENABLE_BT_CODE) {
             //returning from the "enable bluetooth" activity
             if(resultCode ==  RESULT_OK){
-                tryToFindDevices();
+                attemptAuthentication();
             } else{
                 handleBluetoothFailed("Could not enable bluetooth");
             }
@@ -110,6 +117,9 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
         }
+        else{
+            attemptAuthentication();
+        }
     }
 
     private void handleBluetoothFailed(final String reason){
@@ -121,12 +131,51 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         });
     }
 
-    private void tryToFindDevices() {
 
 
-        // Ask about the threads and copying the socket code
+    private boolean attemptAuthentication() {
+        Set<BluetoothDevice> pairedDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        String savedServerMacAddress = PhoneStorageAccess.getServerMacAddress(this);
+        BluetoothDevice pairedDevice = null;
+        BluetoothSocket clientSocket;
+        String salt;
+        byte[] tokenHash;
+
+        CryptoUtilities cryptoUtilities = new CryptoUtilities();
+
+        // If there are paired devices
+        if (pairedDevices.size() > 0) {
+
+            // Loop through paired devices
+            for (BluetoothDevice device : pairedDevices) {
+                if (device.getAddress() == savedServerMacAddress) {
+                    pairedDevice = device;
+                    break;
+                }
+            }
+
+            try {
+                clientSocket = pairedDevice.createRfcommSocketToServiceRecord(UUID.fromString("19ca4e12-abd6-4bcd-9937-37c8ccdad5f4"));
+                clientSocket.connect();
+                try{
+                    salt = PhoneCommunicationApi.receiveAuthenticationResponse(clientSocket).get();
+                    tokenHash = cryptoUtilities.hashToken(PhoneStorageAccess.getToken(this), salt.getBytes());
+                    PhoneCommunicationApi.sendAuthenicationRequest(clientSocket, new String(tokenHash));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
 
+
+        }
     }
 
 }
