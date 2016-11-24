@@ -196,7 +196,7 @@ public class AccessControlActivity extends AppCompatActivity {
 
                 boolean authenticated;
                 boolean received;
-                String receivedTokenHash = "";
+                byte[] receivedTokenHash = null;
                 received = false;
 
                 // Generate the salt
@@ -216,10 +216,10 @@ public class AccessControlActivity extends AppCompatActivity {
                         e.printStackTrace();
                         return false;
                     }
-                    if (receivedTokenHash != null || receivedTokenHash != "") received = true;
+                    if (receivedTokenHash != null ) received = true;
                 }
 
-                authenticated = cryptoUtilities.verifyTokenHash(deviceToken, salt, receivedTokenHash.getBytes());
+                authenticated = cryptoUtilities.verifyTokenHash(deviceToken, salt, receivedTokenHash);
 
                 // Send fail/success response back to the phone
                 AccessControlCommunicationApi.sendFinalAck(bluetoothSocket, authenticated);

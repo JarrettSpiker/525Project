@@ -279,13 +279,13 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                 }
             });
 
-        final AtomicReference<String> token = new AtomicReference<>();
-        final AtomicReference<String> passcode = new AtomicReference<>();
+        final AtomicReference<String> tokenRef = new AtomicReference<>();
 
         //send the token to the client
         ListenableFuture<Void> sendToken = Futures.transformAsync(generateToken, new AsyncFunction<String, Void>() {
             @Override
             public ListenableFuture<Void> apply(String token) {
+                tokenRef.set(token);
                 return AccessControlCommunicationApi.sendTokenAndPasscode(socket, token, requirePasscode);
             }
         });
@@ -301,8 +301,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         //Update the ui with the number of devices we have found, and save a refrence to the device, so that we can send a confirmation later
         ListenableFuture<Boolean> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Boolean>() {
             @Override
-            public Boolean apply(String input) {
-                DeviceInfo info = new DeviceInfo(socket, socket.getRemoteDevice().getAddress(), token.get(), passcode.get());
+            public Boolean apply(String passcode) {
+                DeviceInfo info = new DeviceInfo(socket, socket.getRemoteDevice().getAddress(), tokenRef.get(), passcode);
                 foundDevices.add(info);
                 int found = ++foundSoFar;
                 setNumberOfDevicesFound(found);

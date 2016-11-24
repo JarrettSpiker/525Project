@@ -41,17 +41,6 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
             public void onClick(View v) {
                 boolean success = false;
                 startBluetooth();
-
-                //TODO add seperate messages for failure and no bluetooth device found
-                statusText = (TextView) findViewById(R.id.auth_status_text);
-                if(success){
-                    statusText.setText("Authenticated Successfully!");
-                    statusText.setTextColor(Color.GREEN);
-                } else{
-                    statusText.setText("Authentication Failed!");
-                    statusText.setTextColor(Color.RED);
-                }
-
             }
         });
 
@@ -88,10 +77,6 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         }
     }
 
-    private void reinitialize(){
-        Intent intent = new Intent(this, PhoneInitializeActivity.class);
-        startActivity(intent);
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -106,6 +91,9 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Ensure that bluetooth is on before attempting authentication
+     */
     private void startBluetooth(){
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(bluetoothAdapter == null){
@@ -122,6 +110,15 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Launch the reinit activity
+     */
+    private void reinitialize(){
+        Intent intent = new Intent(this, PhoneInitializeActivity.class);
+        startActivity(intent);
+    }
+
+
     private void handleBluetoothFailed(final String reason){
         runOnUiThread(new Runnable() {
             @Override
@@ -132,8 +129,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
     }
 
 
-
-    private boolean attemptAuthentication() {
+    private void attemptAuthentication() {
         Set<BluetoothDevice> pairedDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
         String savedServerMacAddress = PhoneStorageAccess.getServerMacAddress(this);
         BluetoothDevice pairedDevice = null;
@@ -142,6 +138,8 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         byte[] tokenHash;
 
         CryptoUtilities cryptoUtilities = new CryptoUtilities();
+
+        boolean connectedSuccessfully = false;
 
         // If there are paired devices
         if (pairedDevices.size() > 0) {
@@ -160,15 +158,23 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
 
                 salt = PhoneCommunicationApi.receiveAuthenticationResponse(clientSocket).get();
                 tokenHash = cryptoUtilities.hashToken(PhoneStorageAccess.getToken(this), salt.getBytes());
-                PhoneCommunicationApi.sendAuthenicationRequest(clientSocket, new String(tokenHash));
+                PhoneCommunicationApi.sendAuthenicationRequest(clientSocket, tokenHash);
+                connectedSuccessfully=PhoneCommunicationApi.waitForFinalAck(clientSocket).get();
+
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return false;
+                connectedSuccessfully = false;
             }
 
         }
-        return true;
+        if(connectedSuccessfully){
+            statusText.setText("Your authentication was successful");
+            statusText.setTextColor(Color.GREEN);
+        } else {
+            statusText.setText("Your authentication failed");
+            statusText.setTextColor(Color.RED);
+        }
     }
 
 }

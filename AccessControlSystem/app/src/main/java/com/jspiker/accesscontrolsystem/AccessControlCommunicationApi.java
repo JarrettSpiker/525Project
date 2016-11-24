@@ -114,16 +114,14 @@ public class AccessControlCommunicationApi {
                 });
     }
 
-    public static ListenableFuture<String> receiveAuthenticationResponse (final BluetoothSocket socket){
-        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, String>() {
+    public static ListenableFuture<byte[]> receiveAuthenticationResponse (final BluetoothSocket socket){
+        return Futures.transformAsync(Threading.switchToBackground(), new AsyncFunction<Void, byte[]>() {
             @Override
-            public ListenableFuture<String> apply(Void input) throws Exception {
+            public ListenableFuture<byte[]> apply(Void input) throws Exception {
                 InputStream in = socket.getInputStream();
                 byte[] bytes = new byte[500];
                 in.read(bytes);
-                JSONObject json = new JSONObject(new String(bytes));
-                String receivedHashedToken = json.getString(hashedToken);
-                return Futures.immediateFuture(receivedHashedToken);
+                return Futures.immediateFuture(bytes);
             }
         });
     }

@@ -1,6 +1,7 @@
 package com.jspiker.accesscontrolsystem;
 
 
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -31,13 +32,18 @@ public class CryptoUtilities {
     public byte[] hashToken (final String token, final byte[] salt){
         try {
 
-            SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA512" );
-            PBEKeySpec spec = new PBEKeySpec( token.toCharArray(), salt, ITERATIONS, KEYSIZE );
-            SecretKey key = secretKeyFactory.generateSecret( spec );
-            byte[] hashedToken = key.getEncoded( );
-            return hashedToken;
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update((new String(salt).concat(token)).getBytes());
+            return md.digest();
 
-        } catch( NoSuchAlgorithmException | InvalidKeySpecException e ) {
+
+//            SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA512" );
+//            PBEKeySpec spec = new PBEKeySpec( token.toCharArray(), salt, ITERATIONS, KEYSIZE );
+//            SecretKey key = secretKeyFactory.generateSecret( spec );
+//            byte[] hashedToken = key.getEncoded( );
+//            return hashedToken;
+
+        } catch( NoSuchAlgorithmException e) {
             throw new RuntimeException( e );
         }
 
@@ -46,8 +52,6 @@ public class CryptoUtilities {
     public boolean verifyTokenHash(String token, byte[] salt, byte[] receivedTokenHash){
 
         byte [] expectedTokenHash = hashToken(token, salt);
-
-        if(expectedTokenHash.length != receivedTokenHash.length) return false;
 
         for(int i = 0; i < expectedTokenHash.length; i++){
             if(expectedTokenHash[i] != receivedTokenHash[i]) return false;

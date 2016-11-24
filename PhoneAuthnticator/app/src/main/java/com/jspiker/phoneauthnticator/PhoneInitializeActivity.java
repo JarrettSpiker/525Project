@@ -48,6 +48,21 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     boolean discoveryStarted = false;
 
+
+
+    //notifies when we have found a potential server
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            // When discovery finds a device
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                deviceAdapter.add(device);
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,8 +79,6 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         }
 
         deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
-        // For debugging >
-        //deviceAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
 
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
         foundDevices.setAdapter( deviceAdapter );
@@ -81,12 +94,6 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         setStatusText("Searching for devices...", Color.GRAY);
-
-       /* BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            setStatusText("This device does not support bluetooth", Color.RED);
-            return;
-        } */
 
         if (!mAdapter.isEnabled()) {
             Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -110,6 +117,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
+
+
+        //make sure that our broadcast receiver is listening
         IntentFilter intFilter = new IntentFilter();
         intFilter.addAction(BluetoothDevice.ACTION_FOUND);
         intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
@@ -137,13 +147,12 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
+    /**
+     * Try to find servers
+     */
     private void startDiscovery() {
 
+        //if we dont have location permissions, request them
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
@@ -163,26 +172,6 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     }
 
 
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            // When discovery finds a device
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                //deviceFound(device);
-                deviceAdapter.add(device);
-                // For debugging >
-                //deviceAdapter.add(device.getName() + "\n" + device.getAddress());
-            }
-            /*
-            else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-
-            }
-            */
-        }
-    };
-
     private void setStatusText(final String text, final Integer color) {
         runOnUiThread(new Runnable() {
             @Override
@@ -196,19 +185,15 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     }
 
-    /*
-    private void deviceFound(BluetoothDevice device) {
-        if (!discoveryStarted) {
-            return;
-        }
-        deviceAdapter.add(device);
-    }
-    */
-
+    /**
+     * Called when the user has selected a server to authenticate with
+     * Attempt to get a token from that server, and send it a passcode
+     */
     private void bluetoothServerSelected(final BluetoothDevice device) {
         discoveryStarted = false;
         mAdapter.cancelDiscovery();
-        //BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+
+        //open a connection with the selected derver
         ListenableFuture<BluetoothSocket> getSocket =
                 Threading.runOnBackgroundThread(new Function<Void, BluetoothSocket>() {
                     @Override
@@ -225,6 +210,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                     }
                 });
 
+
         Futures.transformAsync(getSocket, new AsyncFunction<BluetoothSocket, Void>() {
             @Override
             public ListenableFuture<Void> apply(BluetoothSocket socket) {
@@ -237,11 +223,19 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * get the token from, and send the passcode to a connected socket. Then wait for confirmation from the server
+     * @param socket
+     * @return
+     */
     private ListenableFuture<Void> handleConnectedSocketAsync(final BluetoothSocket socket) {
+
+        //get the token, and whether or not we need a passcode from the server
         final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
 
         final AtomicBoolean passcodeRequired = new AtomicBoolean(false);
 
+        //persist the received token
         ListenableFuture<Void> saveToken = Futures.transform(getTokenAndPasscode, new Function<PhoneCommunicationApi.TokenAndPasscodeResponse, Void>() {
             @Override
             public Void apply(PhoneCommunicationApi.TokenAndPasscodeResponse response) {
@@ -251,6 +245,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
+        //if we require a passcode, get one from the user
         ListenableFuture<String> getPasscode = Futures.transform(saveToken, new Function<Void, String>() {
             @Override
             public String apply(Void input) {
@@ -297,6 +292,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
+        //send the passcode (even if it is empty) to the server
         ListenableFuture<Void> sendPasscode = Futures.transformAsync(getPasscode, new AsyncFunction<String,Void>() {
             @Override
             public ListenableFuture apply(String passcode) throws Exception {
@@ -304,6 +300,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
+        //wait for the server to confirm that all devices have registered
         ListenableFuture<Void> waitForConfirmation = Futures.transformAsync(sendPasscode, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
@@ -311,6 +308,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
+        //acknowledge the server's confirmation
         ListenableFuture<Void> confirm =  Futures.transformAsync(waitForConfirmation, new AsyncFunction<Void, Void>() {
             @Override
             public ListenableFuture<Void> apply(Void input) throws Exception {
@@ -318,7 +316,8 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
-
+        //wait for the server to confirm that all devices have acknowledged
+        //if they have, then registration was successful. Failure otherwise
         ListenableFuture<Boolean> waitForFinalAck = Futures.transformAsync(confirm, new AsyncFunction<Void, Boolean>() {
             @Override
             public ListenableFuture<Boolean> apply(Void input) throws Exception {
@@ -334,6 +333,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
             }
         });
 
+
         return Futures.transform(waitForFinalAck, new Function<Boolean, Void>() {
             @Override
             public Void apply(Boolean input) {
@@ -341,8 +341,10 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                     //hit an exception which was already handled
                     return null;
                 }
-
+                //if successful...
                 if(input){
+
+                    //persist the server's address (so that we can reconnect later) and notify the user
                     PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getRemoteDevice().getAddress());
                     setStatusText("Registration was successful!", Color.GREEN);
                 } else{

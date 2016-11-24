@@ -27,7 +27,7 @@ public class PhoneCommunicationApi {
     private static final String clientConfirmationKey = "clientConfirmation";
     private static final String finalAckKey = "finalAck";
     private static final String serverSaltForAuthentication = "serverSaltForAuthentication";
-    private static final String hashedToken = "hashedToken";
+    private static final String hashedTokenKey = "hashedToken";
 
 
     public static ListenableFuture<TokenAndPasscodeResponse> getTokenAndPasscodeRequired(final BluetoothSocket socket){
@@ -106,15 +106,13 @@ public class PhoneCommunicationApi {
         });
     }
 
-    public static ListenableFuture<Void> sendAuthenicationRequest(final BluetoothSocket socket, final String message){
+    public static ListenableFuture<Void> sendAuthenicationRequest(final BluetoothSocket socket, final byte[] hashedToken){
         return Futures.transformAsync(Threading.switchToBackground(),
                 new AsyncFunction<Void, Void>() {
                     @Override
                     public ListenableFuture<Void> apply(Void input) throws Exception {
-                        JSONObject jsonObject = new JSONObject();
-                        jsonObject.put(hashedToken, message);
                         OutputStream out = socket.getOutputStream();
-                        out.write(jsonObject.toString().getBytes());
+                        out.write(hashedToken);
                         return Futures.immediateFuture(null);
                     }
                 });
