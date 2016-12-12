@@ -1,9 +1,6 @@
-package com.jspiker.phoneauthnticator;
+package com.jspiker.phoneauthnticator.model;
 
 import android.Manifest;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -28,6 +25,11 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.jspiker.phoneauthnticator.R;
+import com.jspiker.phoneauthnticator.Threading;
+import com.jspiker.phoneauthnticator.communication.CommunicationDevice;
+import com.jspiker.phoneauthnticator.communication.CommunicationManager;
+import com.jspiker.phoneauthnticator.communication.CommunicationSocket;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -43,12 +45,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
 
     TextView statusText;
     ListView foundDevices;
-    BluetoothAdapter mAdapter;
-    ArrayAdapter<BluetoothDevice> deviceAdapter;
+    ArrayAdapter<CommunicationDevice> deviceAdapter;
 
     boolean discoveryStarted = false;
-
-
 
     //notifies when we have found a potential server
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -56,9 +55,8 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             // When discovery finds a device
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                deviceAdapter.add(device);
+            if (CommunicationManager.manager.getDeviceFoundCode().equals(action)) {
+                deviceAdapter.add(CommunicationManager.manager.getDeviceFromDiscoveryIntent(intent));
             }
         }
     };
@@ -69,23 +67,22 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_initialize);
         statusText = (TextView) findViewById(R.id.initialize_status);
 
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        IntentFilter filter = new IntentFilter(CommunicationManager.manager.getDeviceFoundCode());
         registerReceiver(receiver, filter);
 
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mAdapter == null) {
-            setStatusText("This device does not support bluetooth", Color.RED);
+        if (!CommunicationManager.manager.areCommunicationsSupported()) {
+            setStatusText("This device does not support communications", Color.RED);
             return;
         }
 
-        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        deviceAdapter = new ArrayAdapter<CommunicationDevice>(this, android.R.layout.simple_list_item_1);
 
         foundDevices = (ListView) findViewById(R.id.found_devices_list);
         foundDevices.setAdapter( deviceAdapter );
         foundDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                bluetoothServerSelected(deviceAdapter.getItem(position));
+                serverSelected(deviceAdapter.getItem(position));
             }
         });
     }
@@ -95,9 +92,8 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         super.onStart();
         setStatusText("Searching for devices...", Color.GRAY);
 
-        if (!mAdapter.isEnabled()) {
-            Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(startBluetooth, REQUEST_ENABLE_BT);
+        if (!CommunicationManager.manager.areCommunicationsEnabled()) {
+            startActivityForResult(CommunicationManager.manager.enableCommunicationsIntent(), REQUEST_ENABLE_BT);
             // We need to go into the app permission settings if the list of devices is not populating
         } else {
             startDiscovery();
@@ -118,12 +114,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
 
-
         //make sure that our broadcast receiver is listening
         IntentFilter intFilter = new IntentFilter();
-        intFilter.addAction(BluetoothDevice.ACTION_FOUND);
-        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        intFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        intFilter.addAction(CommunicationManager.manager.getDeviceFoundCode());
         registerReceiver(receiver, intFilter);
     }
 
@@ -138,11 +131,11 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         // Check which request we're responding to
         if (requestCode == REQUEST_ENABLE_BT) {
-            //returning from the "enable bluetooth" activity
+            //returning from the "enable communications" activity
             if (resultCode == RESULT_OK) {
                 startDiscovery();
             } else {
-                setStatusText("Could not enable bluetooth", Color.RED);
+                setStatusText("Could not enable communications", Color.RED);
             }
         }
     }
@@ -166,9 +159,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
         foundDevices.setEnabled(true);
 
         discoveryStarted = true;
-        deviceAdapter = new ArrayAdapter<BluetoothDevice>(this, android.R.layout.simple_list_item_1);
+        deviceAdapter = new ArrayAdapter<CommunicationDevice>(this, android.R.layout.simple_list_item_1);
         foundDevices.setAdapter(deviceAdapter);
-        mAdapter.startDiscovery();
+        CommunicationManager.manager.startDiscovery();
     }
 
 
@@ -189,18 +182,18 @@ public class PhoneInitializeActivity extends AppCompatActivity {
      * Called when the user has selected a server to authenticate with
      * Attempt to get a token from that server, and send it a passcode
      */
-    private void bluetoothServerSelected(final BluetoothDevice device) {
+    private void serverSelected(final CommunicationDevice device) {
         discoveryStarted = false;
-        mAdapter.cancelDiscovery();
+        CommunicationManager.manager.cancelDiscovery();
 
         //open a connection with the selected derver
-        ListenableFuture<BluetoothSocket> getSocket =
-                Threading.runOnBackgroundThread(new Function<Void, BluetoothSocket>() {
+        ListenableFuture<CommunicationSocket> getSocket =
+                Threading.runOnBackgroundThread(new Function<Void, CommunicationSocket>() {
                     @Override
-                    public BluetoothSocket apply(Void input) {
-                        BluetoothSocket socket = null;
+                    public CommunicationSocket apply(Void input) {
+                        CommunicationSocket socket = null;
                         try {
-                            socket = device.createRfcommSocketToServiceRecord(UUID.fromString(UUID_STRING));
+                            socket = device.createCommunicationSocket(UUID.fromString(UUID_STRING));
                             socket.connect();
                             return socket;
                         } catch (IOException e) {
@@ -211,9 +204,9 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                 });
 
 
-        Futures.transformAsync(getSocket, new AsyncFunction<BluetoothSocket, Void>() {
+        Futures.transformAsync(getSocket, new AsyncFunction<CommunicationSocket, Void>() {
             @Override
-            public ListenableFuture<Void> apply(BluetoothSocket socket) {
+            public ListenableFuture<Void> apply(CommunicationSocket socket) {
                 if (socket == null) {
                     return Futures.immediateFuture(null);
                 }
@@ -228,7 +221,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
      * @param socket
      * @return
      */
-    private ListenableFuture<Void> handleConnectedSocketAsync(final BluetoothSocket socket) {
+    private ListenableFuture<Void> handleConnectedSocketAsync(final CommunicationSocket socket) {
 
         //get the token, and whether or not we need a passcode from the server
         final ListenableFuture<PhoneCommunicationApi.TokenAndPasscodeResponse> getTokenAndPasscode = PhoneCommunicationApi.getTokenAndPasscodeRequired(socket);
@@ -345,7 +338,7 @@ public class PhoneInitializeActivity extends AppCompatActivity {
                 if(input){
 
                     //persist the server's address (so that we can reconnect later) and notify the user
-                    PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getRemoteDevice().getAddress());
+                    PhoneStorageAccess.setServerMacAddress(PhoneInitializeActivity.this, socket.getAddress());
                     setStatusText("Registration was successful!", Color.GREEN);
                 } else{
                     setStatusText("Establishment of all entities failed. Authentication failed", Color.RED);

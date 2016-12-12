@@ -1,4 +1,4 @@
-package com.jspiker.phoneauthnticator;
+package com.jspiker.phoneauthnticator.model;
 
 import android.content.Context;
 import android.content.SharedPreferences;

@@ -1,25 +1,26 @@
-package com.jspiker.phoneauthnticator;
+package com.jspiker.phoneauthnticator.model;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.io.IOException;
+import com.jspiker.phoneauthnticator.CryptoUtilities;
+import com.jspiker.phoneauthnticator.R;
+import com.jspiker.phoneauthnticator.communication.CommunicationDevice;
+import com.jspiker.phoneauthnticator.communication.CommunicationManager;
+import com.jspiker.phoneauthnticator.communication.CommunicationSocket;
+
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 public class PhoneAuthenticatorActivity extends AppCompatActivity {
-    private static final int REQUEST_ENABLE_BT_CODE = 7;
+    private static final int REQUEST_ENABLE_COMMUNICATIONS_CODE = 7;
 
     private TextView initText;
 
@@ -39,8 +40,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         authButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                boolean success = false;
-                startBluetooth();
+                startCommunications();
             }
         });
 
@@ -81,29 +81,27 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
-        if (requestCode == REQUEST_ENABLE_BT_CODE) {
-            //returning from the "enable bluetooth" activity
+        if (requestCode == REQUEST_ENABLE_COMMUNICATIONS_CODE) {
+            //returning from the "enable communications" activity
             if(resultCode ==  RESULT_OK){
                 attemptAuthentication();
             } else{
-                handleBluetoothFailed("Could not enable bluetooth");
+                handleCommunicationFailed("Could not enable communications");
             }
         }
     }
 
     /**
-     * Ensure that bluetooth is on before attempting authentication
+     * Ensure that communications are enabled before attempting authentication
      */
-    private void startBluetooth(){
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(bluetoothAdapter == null){
-            //bluetooth is not supported on the device
-            handleBluetoothFailed("This device does not support bluetooth");
+    private void startCommunications(){
+        if(!CommunicationManager.manager.areCommunicationsSupported()){
+            //the communication method is not supported on the device
+            handleCommunicationFailed("This device does not support communications");
             return;
         }
-        if(!bluetoothAdapter.isEnabled()){
-            Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
+        if(!CommunicationManager.manager.areCommunicationsEnabled()){
+            startActivityForResult(CommunicationManager.manager.enableCommunicationsIntent(), REQUEST_ENABLE_COMMUNICATIONS_CODE);
         }
         else{
             attemptAuthentication();
@@ -119,21 +117,21 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
     }
 
 
-    private void handleBluetoothFailed(final String reason){
+    private void handleCommunicationFailed(final String reason){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                initText.setText("Bluetooth connection failed\n" + reason);
+                initText.setText("Connection failed\n" + reason);
             }
         });
     }
 
 
     private void attemptAuthentication() {
-        Set<BluetoothDevice> pairedDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        Set<CommunicationDevice> pairedDevices = CommunicationManager.manager.getBondedDevices();
         String savedServerMacAddress = PhoneStorageAccess.getServerMacAddress(this);
-        BluetoothDevice pairedDevice = null;
-        BluetoothSocket clientSocket;
+        CommunicationDevice pairedDevice = null;
+        CommunicationSocket clientSocket;
         String salt;
         byte[] tokenHash;
 
@@ -145,7 +143,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
         if (pairedDevices.size() > 0) {
 
             // Loop through paired devices
-            for (BluetoothDevice device : pairedDevices) {
+            for (CommunicationDevice device : pairedDevices) {
                 if (device.getAddress().equals(savedServerMacAddress) ){
                     pairedDevice = device;
                     break;
@@ -153,7 +151,7 @@ public class PhoneAuthenticatorActivity extends AppCompatActivity {
             }
 
             try {
-                clientSocket = pairedDevice.createRfcommSocketToServiceRecord(UUID.fromString("19ca4e12-abd6-4bcd-9937-37c8ccdad5f4"));
+                clientSocket = pairedDevice.createCommunicationSocket(UUID.fromString("19ca4e12-abd6-4bcd-9937-37c8ccdad5f4"));
                 clientSocket.connect();
 
                 salt = PhoneCommunicationApi.receiveAuthenticationResponse(clientSocket).get();

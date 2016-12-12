@@ -1,4 +1,4 @@
-package com.jspiker.accesscontrolsystem;
+package com.jspiker.accesscontrolsystem.model;
 
 import android.content.Context;
 import android.content.SharedPreferences;

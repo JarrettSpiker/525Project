@@ -1,9 +1,6 @@
-package com.jspiker.accesscontrolsystem;
+package com.jspiker.accesscontrolsystem.model;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -16,10 +13,14 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.common.base.Function;
-import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.jspiker.accesscontrolsystem.R;
+import com.jspiker.accesscontrolsystem.Threading;
+import com.jspiker.accesscontrolsystem.communication.CommunicationManager;
+import com.jspiker.accesscontrolsystem.communication.CommunicationServerSocket;
+import com.jspiker.accesscontrolsystem.communication.CommunicationSocket;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -35,7 +36,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
 
     private static final String UUID_STRING = "fb6c2ead-8d7b-47a4-bc5e-c8df7534ef4f"; //This must be the same in both the client and the server
-    private static final int REQUEST_ENABLE_BT_CODE = 7;
+    private static final int REQUEST_ENABLE_COMMUNICATIONS_CODE = 7;
     private static final int REQUEST_ENABLE_DISC = 8;
 
     private static final String numberOfDevicesFound = "Number of devices found: ";
@@ -77,8 +78,8 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
                 requirePasscodeSwitch.setEnabled(false);
                 numDevicesSpinner.setEnabled(false);
 
-                //reinitialization begins with starting bluetooth
-                startBluetooth();
+                //reinitialization begins with starting communications
+                startCommunicationsCapability();
             }
         });
 
@@ -88,7 +89,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
         // Will display the address of this phone to the user
         TextView thisDeviceIDText = (TextView) findViewById(R.id.IDText);
-        thisDeviceIDText.setText("Device Address: " + android.provider.Settings.Secure.getString(this.getContentResolver(), "bluetooth_address"));
+        thisDeviceIDText.setText("Device Address: " + android.provider.Settings.Secure.getString(this.getContentResolver(), "device_address"));
 
         completeButton = (Button) findViewById(R.id.completeButton);
         completeButton.setOnClickListener(new View.OnClickListener() {
@@ -105,12 +106,12 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
-        if (requestCode == REQUEST_ENABLE_BT_CODE) {
-            //returning from the "enable bluetooth" activity
+        if (requestCode == REQUEST_ENABLE_COMMUNICATIONS_CODE) {
+            //returning from the "enable communications" activity
             if(resultCode ==  RESULT_OK){
                 makeDiscoverable();
             } else{
-                handleBluetoothFailed("Could not enable bluetooth");
+                handleCommunicationFailed("Could not enable communications");
             }
         }
         if(requestCode == REQUEST_ENABLE_DISC){
@@ -118,15 +119,20 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onPause(){
+        super.onPause();
+        ResourceManager.revokeAccess();
+    }
     /**
-     * Let the user know that their device's bluetooth connection failed somehow
+     * Let the user know that their device's connection failed somehow
      */
-    private void handleBluetoothFailed(final String reason){
+    private void handleCommunicationFailed(final String reason){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 numDevicesText.setVisibility(View.VISIBLE);
-                numDevicesText.setText("Bluetooth connection failed\n" + reason);
+                numDevicesText.setText("Connection failed\n" + reason);
                 numDevicesText.setTextColor(Color.RED);
 
                 switchToFindingDevicesMode(false);
@@ -136,19 +142,17 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
 
 
     /**
-     * Ensure that bluetooth is on, and make the device discoverable
+     * Ensure that communoication capabilities are on, and make the device discoverable
      */
-    private void startBluetooth(){
-
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(bluetoothAdapter == null){
-            //bluetooth is not supported on the device
-            handleBluetoothFailed("This device does not support bluetooth");
+    private void startCommunicationsCapability(){
+        if(!CommunicationManager.manager.areCommunicationsSupported()){
+            //the communication method is not supported on the device
+            handleCommunicationFailed("This device does not support your communication method");
             return;
         }
-        if(!bluetoothAdapter.isEnabled()){
-            Intent startBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(startBluetooth, REQUEST_ENABLE_BT_CODE);
+        if(!CommunicationManager.manager.areCommunicationsEnabled()){
+            Intent startCommunication = CommunicationManager.manager.enableCommunicationsIntent();
+            startActivityForResult(startCommunication, REQUEST_ENABLE_COMMUNICATIONS_CODE);
         } else{
             makeDiscoverable();
         }
@@ -159,9 +163,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
      * If this is successful, control will be transfered to the onActivityResult method
      */
     private void makeDiscoverable(){
-        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3600);
-        startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISC);
+        startActivityForResult(CommunicationManager.manager.enableDiscoverabilityIntent(), REQUEST_ENABLE_DISC);
     }
 
     /**
@@ -178,7 +180,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     /**
-     * Start looking for devices. Run the function which starts a bluetooth server on a background thread
+     * Start looking for devices. Run the function which starts a communications server on a background thread
      */
     private void tryToFindDevices() {
         setNumberOfDevicesFound(0);
@@ -197,23 +199,23 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         @Override
         public Void apply(Void input) {
 
-            final  AtomicReference<BluetoothServerSocket> serverSocket = new AtomicReference<>();
+            final  AtomicReference<CommunicationServerSocket> serverSocket = new AtomicReference<>();
             try {
                 try {
                     //open the server socket and start listening for connection requests
-                    serverSocket.set(BluetoothAdapter.getDefaultAdapter().listenUsingRfcommWithServiceRecord("Initialize Access Control System",UUID.fromString(UUID_STRING)));
+                    serverSocket.set(CommunicationManager.manager.getServerSocket(AccessControlInitializeActivity.this ,UUID.fromString(UUID_STRING)));
                 } catch (IOException e) {
-                    handleBluetoothFailed("Bluetooth socket creation failed: " + e.getMessage());
+                    handleCommunicationFailed("Server socket creation failed: " + e.getMessage());
                     return  null;
                 }
 
-                BluetoothSocket socket;
+                CommunicationSocket socket;
                 final AtomicInteger connectedSoFar = new AtomicInteger(0); //number of successful connections
 
                 //keep looking until we find the user specified number of devices
                 while (connectedSoFar.get() < numDevices) {
                     try {
-                        socket = serverSocket.get().accept();
+                        socket = serverSocket.get().waitForCommunicationSocket();
                     } catch (IOException e) {
                         continue;
                     }
@@ -267,7 +269,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     /**
      * Take a socket (connection to a new phone) and establish the token and passcode
      */
-    private  ListenableFuture<Boolean> handlePhoneConnected(final BluetoothSocket socket){
+    private  ListenableFuture<Boolean> handlePhoneConnected(final CommunicationSocket socket){
 
         //generate a random token
         ListenableFuture<String> generateToken =Futures.transform(Threading.switchToBackground(), new Function<Void, String>() {
@@ -302,7 +304,7 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
         ListenableFuture<Boolean> updateDevicesFound = Futures.transform(getPasscode, new Function<String, Boolean>() {
             @Override
             public Boolean apply(String passcode) {
-                DeviceInfo info = new DeviceInfo(socket, socket.getRemoteDevice().getAddress(), tokenRef.get(), passcode);
+                DeviceInfo info = new DeviceInfo(socket, socket.getAddress(), tokenRef.get(), passcode);
                 foundDevices.add(info);
                 int found = ++foundSoFar;
                 setNumberOfDevicesFound(found);
@@ -478,11 +480,11 @@ public class AccessControlInitializeActivity extends AppCompatActivity {
     }
 
     public static class DeviceInfo{
-        final BluetoothSocket socket;
+        final CommunicationSocket socket;
         final String token;
         final String passcode;
         final String macAddress;
-        DeviceInfo(BluetoothSocket socket, String macAddress, String token, String passcode){
+        DeviceInfo(CommunicationSocket socket, String macAddress, String token, String passcode){
             this.socket = socket;
             this.token = token;
             this.passcode = passcode;

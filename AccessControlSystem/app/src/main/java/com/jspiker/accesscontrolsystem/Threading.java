@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
  */
 public class Threading {
 
-    private final static ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+    private final static ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(100));
 
 
 
